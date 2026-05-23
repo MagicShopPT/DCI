@@ -113,6 +113,7 @@ public class PlayerPanel extends JPanel {
         try {
             frame.getEventService().addPlayer(frame.getEvent(), firstNameField.getText(), lastNameField.getText(), emailField.getText(), teamField.getText());
             clearFields();
+            frame.autoSaveEvent();
             frame.refreshAll();
         } catch (Exception exception) {
             frame.showError(exception);
@@ -126,6 +127,7 @@ public class PlayerPanel extends JPanel {
         }
         try {
             frame.getEventService().updatePlayer(frame.getEvent(), player, firstNameField.getText(), lastNameField.getText(), emailField.getText(), teamField.getText());
+            frame.autoSaveEvent();
             frame.refreshAll();
         } catch (Exception exception) {
             frame.showError(exception);
@@ -140,6 +142,7 @@ public class PlayerPanel extends JPanel {
         try {
             frame.getEventService().removePlayer(frame.getEvent(), player);
             clearFields();
+            frame.autoSaveEvent();
             frame.refreshAll();
         } catch (Exception exception) {
             frame.showError(exception);
@@ -152,6 +155,7 @@ public class PlayerPanel extends JPanel {
             return;
         }
         frame.getEventService().dropPlayer(player);
+        frame.autoSaveEvent();
         frame.refreshAll();
     }
 

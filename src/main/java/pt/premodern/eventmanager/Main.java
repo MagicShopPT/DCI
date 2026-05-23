@@ -9,9 +9,9 @@ public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
             } catch (Exception ignored) {
-                // Keep Swing's default look and feel if the system one is unavailable.
+                // Keep Swing's default look and feel if the cross-platform one is unavailable.
             }
             new MainFrame().setVisible(true);
         });

@@ -1,0 +1,13 @@
+{
+  "id": "4f9f1968-7c10-4f52-9609-c6df4553011f",
+  "name": "New Event",
+  "players": [],
+  "rounds": [],
+  "currentRoundNumber": 0,
+  "totalSwissRounds": 0,
+  "hasTopCut": false,
+  "topCutSize": 0,
+  "teamEvent": false,
+  "status": "CREATED",
+  "eventType": "SWISS_ONLY"
+}

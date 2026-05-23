@@ -78,14 +78,17 @@ public class PenaltyEntryDialog extends JDialog {
         this.frame = frame;
         setLayout(new BorderLayout(12, 12));
         setMinimumSize(new Dimension(820, 520));
-        setLocationRelativeTo(frame);
 
         add(form(), BorderLayout.NORTH);
         add(history(), BorderLayout.CENTER);
         add(actions(), BorderLayout.SOUTH);
         populatePlayers(selectedPlayer);
         refreshHistory();
+        getContentPane().setBackground(AppTheme.background(frame.isDarkMode()));
+        AppTheme.install(frame.isDarkMode());
+        AppTheme.styleTree(this, frame.isDarkMode());
         pack();
+        setLocationRelativeTo(frame);
     }
 
     private JPanel form() {
@@ -118,6 +121,7 @@ public class PenaltyEntryDialog extends JDialog {
         historyTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         JScrollPane scroll = new JScrollPane(historyTable);
         scroll.setBorder(BorderFactory.createTitledBorder("Other penalties for this player"));
+        scroll.setPreferredSize(new Dimension(760, 170));
         return scroll;
     }
 

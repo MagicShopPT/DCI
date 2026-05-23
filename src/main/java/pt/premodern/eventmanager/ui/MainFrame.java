@@ -1,13 +1,21 @@
 package pt.premodern.eventmanager.ui;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -16,9 +24,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 
 import pt.premodern.eventmanager.model.Event;
 import pt.premodern.eventmanager.model.EventStatus;
@@ -45,7 +50,10 @@ public class MainFrame extends JFrame {
 
     private Event event;
     private File currentFile;
-    private final JTabbedPane tabs = new JTabbedPane();
+    private final JPanel cards = new JPanel(new CardLayout());
+    private final JPanel sidebar = new JPanel(new GridBagLayout());
+    private final Map<Component, JButton> navigationButtons = new LinkedHashMap<>();
+    private JLabel sidebarBrand;
     private final EventPanel eventPanel;
     private final EventInfoPanel eventInfoPanel;
     private final PlayerPanel playerPanel;
@@ -54,10 +62,12 @@ public class MainFrame extends JFrame {
     private final StandingsPanel standingsPanel;
     private final TopCutPanel topCutPanel;
     private final ClockPanel clockPanel;
-    private Component previousTab;
+    private Component previousPanel;
+    private boolean darkMode = false;
 
     public MainFrame() {
         super("MTG Event Manager");
+        AppTheme.install(darkMode);
         this.event = eventService.createEvent("New Event", EventType.SWISS_ONLY, 0);
 
         this.eventPanel = new EventPanel(this);
@@ -73,24 +83,10 @@ public class MainFrame extends JFrame {
         setMinimumSize(new Dimension(1040, 700));
         setLocationByPlatform(true);
         setJMenuBar(createMenuBar());
+        getContentPane().setBackground(AppTheme.background(darkMode));
         add(eventInfoPanel, BorderLayout.NORTH);
-        add(tabs, BorderLayout.CENTER);
-
-        tabs.addTab("Event", eventPanel);
-        tabs.addTab("Players", playerPanel);
-        tabs.addTab("Pairings", pairingsPanel);
-        tabs.addTab("Results", resultsPanel);
-        tabs.addTab("Standings", standingsPanel);
-        tabs.addTab("Top Cut", topCutPanel);
-        tabs.addTab("Clock", clockPanel);
-        previousTab = tabs.getSelectedComponent();
-        tabs.addChangeListener(e -> {
-            Component selected = tabs.getSelectedComponent();
-            if (selected == resultsPanel && previousTab != resultsPanel) {
-                resultsPanel.selectLatestRoundForEntry();
-            }
-            previousTab = selected;
-        });
+        add(mainArea(), BorderLayout.CENTER);
+        showPanel(eventPanel);
 
         refreshAll();
         pack();
@@ -114,6 +110,13 @@ public class MainFrame extends JFrame {
         refreshAll();
     }
 
+    public void startNewEvent(Event event) {
+        this.event = event;
+        this.currentFile = null;
+        autoSaveEvent();
+        refreshAll();
+    }
+
     public void refreshAll() {
         eventPanel.refreshData();
         eventInfoPanel.refreshData();
@@ -122,6 +125,7 @@ public class MainFrame extends JFrame {
         resultsPanel.refreshData();
         standingsPanel.refreshData();
         topCutPanel.refreshData();
+        updateSidebarLabels();
         applyStandardColors();
         setTitle("MTG Event Manager - " + event.getName());
     }
@@ -138,6 +142,15 @@ public class MainFrame extends JFrame {
 
     public boolean clockIsOvertime() {
         return clockPanel != null && clockPanel.isOvertime();
+    }
+
+    public boolean isDarkMode() {
+        return darkMode;
+    }
+
+    public void toggleTheme() {
+        darkMode = !darkMode;
+        applyStandardColors();
     }
 
     public String winnerSummaryHtml() {
@@ -193,6 +206,7 @@ public class MainFrame extends JFrame {
         try {
             Round round = topCutService.generateNextTopCutRound(event);
             if (round == null) {
+                autoSaveEvent();
                 refreshAll();
                 showWinnerPopup();
             } else {
@@ -204,7 +218,7 @@ public class MainFrame extends JFrame {
     }
 
     public void showResultsTab() {
-        tabs.setSelectedComponent(resultsPanel);
+        showPanel(resultsPanel);
     }
 
     public void afterResultSubmitted(Round round) {
@@ -235,6 +249,7 @@ public class MainFrame extends JFrame {
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
                 int imported = eventService.importPlayers(event, chooser.getSelectedFile());
+                autoSaveEvent();
                 refreshAll();
                 showInfo(imported + " player(s) imported.");
             } catch (Exception exception) {
@@ -266,6 +281,134 @@ public class MainFrame extends JFrame {
         showInfo("Penalty recorded: " + entry.getAppliedPenalty() + ".");
     }
 
+    private JPanel mainArea() {
+        JPanel shell = new JPanel(new BorderLayout());
+        shell.setBackground(AppTheme.background(darkMode));
+        shell.add(createSidebar(), BorderLayout.WEST);
+
+        cards.setBackground(AppTheme.background(darkMode));
+        cards.add(eventPanel, "Event");
+        cards.add(playerPanel, "Players");
+        cards.add(pairingsPanel, "Pairings");
+        cards.add(resultsPanel, "Results");
+        cards.add(standingsPanel, "Standings");
+        cards.add(topCutPanel, "Top Cut");
+        cards.add(clockPanel, "Clock");
+        shell.add(cards, BorderLayout.CENTER);
+        return shell;
+    }
+
+    private JPanel createSidebar() {
+        sidebar.setBackground(AppTheme.sidebar(darkMode));
+        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, AppTheme.border(darkMode)));
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+        c.insets = new Insets(0, 0, 0, 0);
+
+        sidebarBrand = new JLabel("<html><b>MTG Event<br>Manager</b></html>");
+        sidebarBrand.setForeground(AppTheme.BLUE);
+        sidebarBrand.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.border(darkMode)),
+                BorderFactory.createEmptyBorder(24, 18, 28, 18)));
+        sidebarBrand.setFont(sidebarBrand.getFont().deriveFont(22f));
+        sidebarBrand.setPreferredSize(new Dimension(230, 112));
+        sidebar.add(sidebarBrand, c);
+
+        addNavButton(c, eventPanel, "Quick Settings");
+        addNavButton(c, playerPanel, "Players");
+        addNavButton(c, pairingsPanel, "Pairings");
+        addNavButton(c, resultsPanel, "Results");
+        addNavButton(c, standingsPanel, "Standings");
+        addNavButton(c, topCutPanel, "Top Cut");
+        addNavButton(c, clockPanel, "Round Timer");
+
+        c.gridy++;
+        c.weighty = 1;
+        JPanel spacer = new JPanel();
+        spacer.setBackground(AppTheme.sidebar(darkMode));
+        sidebar.add(spacer, c);
+        sidebar.setPreferredSize(new Dimension(230, 10));
+        return sidebar;
+    }
+
+    private void addNavButton(GridBagConstraints c, Component panel, String title) {
+        JButton button = new JButton(title);
+        button.putClientProperty(AppTheme.MANUAL_BUTTON, true);
+        button.addActionListener(e -> showPanel(panel));
+        navigationButtons.put(panel, button);
+        c.gridy++;
+        c.weighty = 0;
+        sidebar.add(button, c);
+    }
+
+    private void showPanel(Component panel) {
+        if (panel == resultsPanel && previousPanel != resultsPanel) {
+            resultsPanel.selectLatestRoundForEntry();
+        }
+        ((CardLayout) cards.getLayout()).show(cards, cardName(panel));
+        previousPanel = panel;
+        navigationButtons.forEach((component, button) -> AppTheme.styleSidebarButton(button, component == panel, darkMode));
+    }
+
+    private String cardName(Component panel) {
+        if (panel == eventPanel) {
+            return "Event";
+        }
+        if (panel == playerPanel) {
+            return "Players";
+        }
+        if (panel == pairingsPanel) {
+            return "Pairings";
+        }
+        if (panel == resultsPanel) {
+            return "Results";
+        }
+        if (panel == standingsPanel) {
+            return "Standings";
+        }
+        if (panel == topCutPanel) {
+            return "Top Cut";
+        }
+        return "Clock";
+    }
+
+    private void updateSidebarLabels() {
+        setNavText(eventPanel, "Quick Settings");
+        setNavText(playerPanel, "Players", event.getPlayers().size());
+        setNavText(pairingsPanel, "Pairings", event.getRounds().size());
+        setNavText(resultsPanel, "Results", openMatchCount());
+        setNavText(standingsPanel, "Standings");
+        long topCutRounds = event.getRounds().stream().filter(Round::isPlayoffRound).count();
+        setNavText(topCutPanel, "Top Cut", topCutRounds);
+        setNavText(clockPanel, "Round Timer");
+    }
+
+    private void setNavText(Component panel, String label) {
+        JButton button = navigationButtons.get(panel);
+        if (button != null) {
+            button.setText(label);
+        }
+    }
+
+    private void setNavText(Component panel, String label, long count) {
+        JButton button = navigationButtons.get(panel);
+        if (button != null) {
+            button.setText(label + "    " + count);
+        }
+    }
+
+    private long openMatchCount() {
+        Round round = event.getCurrentRound();
+        if (round == null) {
+            return 0;
+        }
+        return round.getMatches().stream().filter(match -> !match.isCompleted()).count();
+    }
+
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(fileMenu());
@@ -277,10 +420,9 @@ public class MainFrame extends JFrame {
 
     private JMenu fileMenu() {
         JMenu file = new JMenu("File");
-        JMenuItem newEvent = item("New Event", () -> tabs.setSelectedComponent(eventPanel));
+        JMenuItem newEvent = item("New Event", () -> showPanel(eventPanel));
         JMenuItem open = item("Open Event", this::openEvent);
         JMenuItem save = item("Save Event", this::saveEvent);
-        JMenuItem saveAs = item("Save As", this::saveEventAs);
         JMenuItem importPlayers = item("Import Players CSV", this::importPlayersFromCsv);
         JMenu export = new JMenu("Export CSV");
         export.add(item("Player List", () -> exportCsv("players", selected -> eventService.exportPlayers(event, selected))));
@@ -291,7 +433,6 @@ public class MainFrame extends JFrame {
         file.add(newEvent);
         file.add(open);
         file.add(save);
-        file.add(saveAs);
         file.add(importPlayers);
         file.add(export);
         file.addSeparator();
@@ -301,8 +442,7 @@ public class MainFrame extends JFrame {
 
     private JMenu playersMenu() {
         JMenu players = new JMenu("Players");
-        players.add(item("Add Player", () -> tabs.setSelectedComponent(playerPanel)));
-        players.add(item("Player List", () -> tabs.setSelectedComponent(playerPanel)));
+        players.add(item("Player List", () -> showPanel(playerPanel)));
         players.add(item("Import Players CSV", this::importPlayersFromCsv));
         players.add(item("Penalty Entry", () -> showPenaltyEntry(null)));
         return players;
@@ -311,23 +451,39 @@ public class MainFrame extends JFrame {
     private JMenu eventMenu() {
         JMenu eventMenu = new JMenu("Event");
         eventMenu.add(item("Generate Round", this::generateSwissRound));
-        eventMenu.add(item("Enter Results", () -> tabs.setSelectedComponent(resultsPanel)));
-        eventMenu.add(item("View Standings", () -> tabs.setSelectedComponent(standingsPanel)));
+        eventMenu.add(item("Enter Results", () -> showPanel(resultsPanel)));
+        eventMenu.add(item("View Standings", () -> showPanel(standingsPanel)));
         eventMenu.add(item("Create Top Cut", this::createTopCut));
-        eventMenu.add(item("Clock", () -> tabs.setSelectedComponent(clockPanel)));
+        eventMenu.add(item("Clock", () -> showPanel(clockPanel)));
         return eventMenu;
     }
 
     private void applyStandardColors() {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
-            // Keep the current Look & Feel if the system one is not available.
-        }
-        SwingUtilities.updateComponentTreeUI(this);
-        eventInfoPanel.applyStandardTheme();
-        clockPanel.applyStandardTheme();
+        AppTheme.install(darkMode);
+        getContentPane().setBackground(AppTheme.background(darkMode));
+        cards.setBackground(AppTheme.background(darkMode));
+        AppTheme.styleTree(this, darkMode);
+        restyleSidebar();
+        eventInfoPanel.applyTheme(darkMode);
+        clockPanel.applyTheme(darkMode);
+        navigationButtons.forEach((component, button) -> AppTheme.styleSidebarButton(button, component == previousPanel, darkMode));
         repaint();
+    }
+
+    private void restyleSidebar() {
+        sidebar.setBackground(AppTheme.sidebar(darkMode));
+        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, AppTheme.border(darkMode)));
+        if (sidebarBrand != null) {
+            sidebarBrand.setForeground(AppTheme.BLUE);
+            sidebarBrand.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.border(darkMode)),
+                    BorderFactory.createEmptyBorder(24, 18, 28, 18)));
+        }
+        for (Component component : sidebar.getComponents()) {
+            if (component instanceof JPanel panel) {
+                panel.setBackground(AppTheme.sidebar(darkMode));
+            }
+        }
     }
 
     private JMenu helpMenu() {
@@ -382,6 +538,7 @@ public class MainFrame extends JFrame {
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             currentFile = chooser.getSelectedFile();
             event = storageService.loadEvent(currentFile);
+            eventPanel.lockCurrentEvent();
             resultService.recalculateEvent(event);
             refreshAll();
         }
@@ -424,16 +581,18 @@ public class MainFrame extends JFrame {
     }
 
     private void refreshAfterRoundGeneration(Round round) {
-        tabs.setSelectedComponent(round.isPlayoffRound() ? topCutPanel : pairingsPanel);
+        showPanel(round.isPlayoffRound() ? topCutPanel : pairingsPanel);
         autoSaveEvent();
         refreshAll();
     }
 
-    private void autoSaveEvent() {
+    public void autoSaveEvent() {
         try {
-            storageService.saveEvent(event, autoSaveFile());
+            File file = currentFile == null ? autoSaveFile() : currentFile;
+            storageService.saveEvent(event, file);
+            currentFile = file;
         } catch (IOException exception) {
-            showError(new IOException("The round was generated, but autosave failed: " + exception.getMessage(), exception));
+            showError(new IOException("Autosave failed: " + exception.getMessage(), exception));
         }
     }
 

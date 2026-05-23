@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import pt.premodern.eventmanager.model.Event;
+import pt.premodern.eventmanager.model.EventStatus;
 import pt.premodern.eventmanager.model.EventType;
 
 public class EventPanel extends JPanel {
@@ -27,6 +28,9 @@ public class EventPanel extends JPanel {
     private final JLabel roundLabel = new JLabel();
     private final JLabel roundsLabel = new JLabel();
     private final JLabel winnerLabel = new JLabel("-");
+    private final JButton createButton = new JButton("Create New Event");
+    private final JButton finishButton = new JButton("End Current Event");
+    private boolean currentEventLocked;
 
     public EventPanel(MainFrame frame) {
         super(new BorderLayout(12, 12));
@@ -49,6 +53,14 @@ public class EventPanel extends JPanel {
         roundLabel.setText(String.valueOf(event.getCurrentRoundNumber()));
         roundsLabel.setText(String.valueOf(event.getTotalSwissRounds()));
         winnerLabel.setText(frame.winnerSummaryHtml());
+        createButton.setEnabled(!currentEventLocked);
+        finishButton.setVisible(currentEventLocked);
+    }
+
+    public void lockCurrentEvent() {
+        currentEventLocked = true;
+        createButton.setEnabled(false);
+        finishButton.setVisible(true);
     }
 
     private JPanel form() {
@@ -59,12 +71,16 @@ public class EventPanel extends JPanel {
         addRow(panel, c, 1, "Type", typeCombo);
         addRow(panel, c, 2, "Top Cut (4/8/16/32/64)", topCutCombo);
         addRow(panel, c, 3, "Format", teamEventCheck);
-        JButton create = new JButton("Create New Event");
-        create.addActionListener(e -> createEvent());
+        createButton.addActionListener(e -> createEvent());
+        finishButton.addActionListener(e -> finishCurrentEvent());
+        finishButton.setVisible(false);
+        JPanel buttons = new JPanel();
+        buttons.add(createButton);
+        buttons.add(finishButton);
         c.gridx = 1;
         c.gridy = 4;
         c.anchor = GridBagConstraints.WEST;
-        panel.add(create, c);
+        panel.add(buttons, c);
         typeCombo.addActionListener(e -> topCutCombo.setEnabled(typeCombo.getSelectedItem() == EventType.SWISS_WITH_TOP_CUT));
         return panel;
     }
@@ -91,7 +107,15 @@ public class EventPanel extends JPanel {
     private void createEvent() {
         EventType type = (EventType) typeCombo.getSelectedItem();
         int topCut = type == EventType.SWISS_WITH_TOP_CUT ? (Integer) topCutCombo.getSelectedItem() : 0;
-        frame.setEvent(frame.getEventService().createEvent(nameField.getText(), type, topCut, teamEventCheck.isSelected()));
+        currentEventLocked = true;
+        frame.startNewEvent(frame.getEventService().createEvent(nameField.getText(), type, topCut, teamEventCheck.isSelected()));
+    }
+
+    private void finishCurrentEvent() {
+        frame.getEvent().setStatus(EventStatus.FINISHED);
+        currentEventLocked = false;
+        frame.autoSaveEvent();
+        frame.refreshAll();
     }
 
     private GridBagConstraints constraints() {
