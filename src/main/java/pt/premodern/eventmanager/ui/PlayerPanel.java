@@ -24,7 +24,7 @@ public class PlayerPanel extends JPanel {
     private final JTextField emailField = new JTextField(20);
     private final JTextField teamField = new JTextField(14);
     private final DefaultTableModel model = new DefaultTableModel(
-            new Object[] {"Seed", "Nome", "E-mail", "Equipa", "Pontos", "Dropped", "Bye"}, 0) {
+            new Object[] {"Seed", "Name", "E-mail", "Team", "Points", "Dropped", "Bye"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
             return false;
@@ -54,31 +54,31 @@ public class PlayerPanel extends JPanel {
                     player.getEmail(),
                     player.getTeam(),
                     player.getMatchPoints(),
-                    player.isDropped() ? "Sim" : "Não",
-                    player.isReceivedBye() ? "Sim" : "Não"
+                    player.isDropped() ? "Yes" : "No",
+                    player.isReceivedBye() ? "Yes" : "No"
             });
         }
     }
 
     private JPanel form() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Jogador"));
+        panel.setBorder(BorderFactory.createTitledBorder("Player"));
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(4, 4, 4, 4);
         c.anchor = GridBagConstraints.WEST;
-        addField(panel, c, 0, "Primeiro nome", firstNameField);
-        addField(panel, c, 1, "Último nome", lastNameField);
+        addField(panel, c, 0, "First name", firstNameField);
+        addField(panel, c, 1, "Last name", lastNameField);
         addField(panel, c, 2, "E-mail", emailField);
-        addField(panel, c, 3, "Equipa", teamField);
+        addField(panel, c, 3, "Team", teamField);
 
         JPanel buttons = new JPanel();
-        JButton add = new JButton("Adicionar");
-        JButton edit = new JButton("Editar");
-        JButton remove = new JButton("Remover");
-        JButton importCsv = new JButton("Importar CSV");
+        JButton add = new JButton("Add");
+        JButton edit = new JButton("Edit");
+        JButton remove = new JButton("Remove");
+        JButton importCsv = new JButton("Import CSV");
         JButton penalty = new JButton("Penalty Entry");
         JButton drop = new JButton("Drop");
-        JButton clear = new JButton("Limpar");
+        JButton clear = new JButton("Clear");
         add.addActionListener(e -> addPlayer());
         edit.addActionListener(e -> editPlayer());
         remove.addActionListener(e -> removePlayer());
@@ -181,7 +181,7 @@ public class PlayerPanel extends JPanel {
         int row = table.getSelectedRow();
         if (row < 0) {
             if (notify) {
-                frame.showInfo("Seleciona um jogador.");
+                frame.showInfo("Select a player.");
             }
             return null;
         }

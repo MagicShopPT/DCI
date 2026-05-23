@@ -27,7 +27,7 @@ public class PairingService {
         int roundNumber = event.getCurrentRoundNumber() + 1;
         List<Player> activePlayers = getActivePlayers(event);
         if (activePlayers.size() < 2) {
-            throw new IllegalStateException("São necessários pelo menos 2 jogadores ativos.");
+            throw new IllegalStateException("At least 2 active players are required.");
         }
 
         if (roundNumber == 1) {
@@ -84,20 +84,20 @@ public class PairingService {
 
     private void validateCanGenerate(Event event) {
         if (event == null) {
-            throw new IllegalStateException("Não existe evento ativo.");
+            throw new IllegalStateException("There is no active event.");
         }
         if (event.getStatus() == EventStatus.FINISHED || event.getStatus() == EventStatus.TOP_CUT_IN_PROGRESS) {
-            throw new IllegalStateException("O evento já não aceita rondas suíças.");
+            throw new IllegalStateException("The event no longer accepts Swiss rounds.");
         }
         if (event.getCurrentRoundNumber() >= event.getTotalSwissRounds() && event.getTotalSwissRounds() > 0) {
-            throw new IllegalStateException("Todas as rondas suíças já foram geradas.");
+            throw new IllegalStateException("All Swiss rounds have already been generated.");
         }
         Round current = event.getCurrentRound();
         if (current != null && !current.isCompleted()) {
-            throw new IllegalStateException("A ronda atual ainda não está completa.");
+            throw new IllegalStateException("The current round is not complete yet.");
         }
         if (event.getPlayers().size() < 2) {
-            throw new IllegalStateException("São necessários pelo menos 2 jogadores.");
+            throw new IllegalStateException("At least 2 players are required.");
         }
         for (int i = 0; i < event.getPlayers().size(); i++) {
             if (event.getPlayers().get(i).getInitialSeed() <= 0) {

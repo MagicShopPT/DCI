@@ -18,23 +18,23 @@ public class TopCutService {
 
     public Round createInitialTopCutRound(Event event) {
         if (!event.isHasTopCut()) {
-            throw new IllegalStateException("Este evento não tem Top Cut configurado.");
+            throw new IllegalStateException("This event does not have Top Cut configured.");
         }
         int eligibleCount = event.isTeamEvent() ? countEligibleTeams(event) : event.getPlayers().size();
         if (event.getTopCutSize() > eligibleCount) {
             throw new IllegalStateException(event.isTeamEvent()
-                    ? "O Top Cut não pode ser maior que o número de equipas."
-                    : "O Top Cut não pode ser maior que o número de jogadores.");
+                    ? "The Top Cut cannot be larger than the number of teams."
+                    : "The Top Cut cannot be larger than the number of players.");
         }
         if (event.getCurrentRoundNumber() < event.getTotalSwissRounds()) {
-            throw new IllegalStateException("Ainda existem rondas suíças por disputar.");
+            throw new IllegalStateException("There are still Swiss rounds to play.");
         }
         Round current = event.getCurrentRound();
         if (current != null && !current.isCompleted()) {
-            throw new IllegalStateException("A ronda atual ainda não está completa.");
+            throw new IllegalStateException("The current round is not complete yet.");
         }
         if (event.getStatus() == EventStatus.TOP_CUT_IN_PROGRESS || event.getStatus() == EventStatus.FINISHED) {
-            throw new IllegalStateException("O Top Cut já foi criado.");
+            throw new IllegalStateException("The Top Cut has already been created.");
         }
 
         List<Player> cutPlayers = event.isTeamEvent()
@@ -53,10 +53,10 @@ public class TopCutService {
     public Round generateNextTopCutRound(Event event) {
         Round current = event.getCurrentRound();
         if (current == null || !current.isPlayoffRound()) {
-            throw new IllegalStateException("Não existe ronda de Top Cut ativa.");
+            throw new IllegalStateException("There is no active Top Cut round.");
         }
         if (!current.isCompleted()) {
-            throw new IllegalStateException("A ronda de Top Cut atual ainda não está completa.");
+            throw new IllegalStateException("The current Top Cut round is not complete yet.");
         }
 
         List<Player> winners = current.getMatches().stream()
@@ -97,7 +97,7 @@ public class TopCutService {
                 .filter(Player::hasTeam)
                 .collect(Collectors.groupingBy(Player::getTeam));
         if (playersByTeam.isEmpty()) {
-            throw new IllegalStateException("Para Top Cut por equipas, os jogadores precisam de equipa preenchida.");
+            throw new IllegalStateException("For team Top Cut, players must have a team filled in.");
         }
 
         Map<Player, Standing> individualStandings = standingService.calculateStandings(event).stream()
@@ -147,7 +147,7 @@ public class TopCutService {
     }
 
     private Player virtualTeamPlayer(TeamStanding teamStanding) {
-        Player player = new Player("Equipa", teamStanding.name(), "", teamStanding.name());
+        Player player = new Player("Team", teamStanding.name(), "", teamStanding.name());
         player.setMatchPoints(teamStanding.points());
         player.setInitialSeed(teamStanding.seed());
         return player;

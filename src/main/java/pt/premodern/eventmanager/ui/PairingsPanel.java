@@ -94,8 +94,8 @@ public class PairingsPanel extends JPanel {
         wrapper.add(roundButtonsPanel, BorderLayout.NORTH);
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 6));
-        JButton generate = new JButton("Gerar Próxima Ronda Suíça");
-        JButton refresh = new JButton("Atualizar");
+        JButton generate = new JButton("Generate Next Swiss Round");
+        JButton refresh = new JButton("Refresh");
         generate.addActionListener(e -> frame.generateSwissRound());
         refresh.addActionListener(e -> frame.refreshAll());
         controls.add(new JLabel("Search results"));
@@ -111,7 +111,7 @@ public class PairingsPanel extends JPanel {
         List<Round> rounds = frame.getEvent().getRounds();
         if (rounds.isEmpty()) {
             selectedRoundNumber = -1;
-            roundButtonsPanel.add(new JLabel("Sem rondas geradas"));
+            roundButtonsPanel.add(new JLabel("No rounds generated"));
             roundButtonsPanel.revalidate();
             roundButtonsPanel.repaint();
             return;
@@ -172,7 +172,7 @@ public class PairingsPanel extends JPanel {
                     omw(stats, p2),
                     gw(stats, p2),
                     ogw(stats, p2),
-                    match.isCompleted() ? "Completo" : "Aberto"
+                    match.isCompleted() ? "Completed" : "Open"
             });
         }
         applySearch();

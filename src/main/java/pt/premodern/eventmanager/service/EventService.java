@@ -127,7 +127,7 @@ public class EventService {
         try (BufferedReader reader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
             String firstLine = reader.readLine();
             if (firstLine == null) {
-                throw new IllegalArgumentException("O ficheiro CSV está vazio.");
+                throw new IllegalArgumentException("The CSV file is empty.");
             }
 
             List<String> firstRow = parseCsvLine(firstLine);
@@ -160,7 +160,7 @@ public class EventService {
     public void exportCurrentPairings(Event event, File file) throws IOException {
         Round round = event.getCurrentRound();
         if (round == null) {
-            throw new IllegalStateException("Não existe ronda atual para exportar.");
+            throw new IllegalStateException("There is no current round to export.");
         }
         try (PrintWriter writer = writer(file)) {
             writer.println("round,table,player1,team1,player2,team2,status,result");
@@ -218,26 +218,26 @@ public class EventService {
 
     private void requireEditablePlayers(Event event) {
         if (isStarted(event)) {
-            throw new IllegalStateException("Não é possível adicionar, editar ou remover jogadores depois de iniciado o evento.");
+            throw new IllegalStateException("Players cannot be added, edited, or removed after the event has started.");
         }
     }
 
     private void validatePlayerData(Event event, UUID currentPlayerId, String firstName, String lastName, String email) {
         if (firstName == null || firstName.isBlank()) {
-            throw new IllegalArgumentException("O primeiro nome é obrigatório.");
+            throw new IllegalArgumentException("First name is required.");
         }
         if (lastName == null || lastName.isBlank()) {
-            throw new IllegalArgumentException("O último nome é obrigatório.");
+            throw new IllegalArgumentException("Last name is required.");
         }
         if (email == null || !EMAIL_PATTERN.matcher(email.trim()).matches()) {
-            throw new IllegalArgumentException("O e-mail não é válido.");
+            throw new IllegalArgumentException("The e-mail address is not valid.");
         }
         String normalized = email.trim().toLowerCase(Locale.ROOT);
         boolean duplicate = event.getPlayers().stream()
                 .filter(player -> !Objects.equals(player.getId(), currentPlayerId))
                 .anyMatch(player -> normalized.equalsIgnoreCase(player.getEmail()));
         if (duplicate) {
-            throw new IllegalArgumentException("Já existe um jogador com esse e-mail.");
+            throw new IllegalArgumentException("A player with that e-mail already exists.");
         }
     }
 
@@ -290,13 +290,13 @@ public class EventService {
         try {
             validatePlayerData(event, null, firstName, lastName, email);
         } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Linha " + lineNumber + ": " + exception.getMessage(), exception);
+            throw new IllegalArgumentException("Line " + lineNumber + ": " + exception.getMessage(), exception);
         }
 
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         boolean duplicateInImport = imported.stream().anyMatch(player -> normalizedEmail.equalsIgnoreCase(player.getEmail()));
         if (duplicateInImport) {
-            throw new IllegalArgumentException("Linha " + lineNumber + ": e-mail duplicado no CSV.");
+            throw new IllegalArgumentException("Line " + lineNumber + ": duplicate e-mail in CSV.");
         }
         return new Player(firstName.trim(), lastName.trim(), normalizedEmail, clean(team));
     }

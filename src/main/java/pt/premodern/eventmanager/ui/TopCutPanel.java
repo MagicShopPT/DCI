@@ -25,7 +25,7 @@ public class TopCutPanel extends JPanel {
     private final JLabel status = new JLabel();
     private final JPanel cutButtonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 8));
     private final DefaultTableModel model = new DefaultTableModel(
-            new Object[] {"Mesa", "Jogador/Equipa 1", "Equipa 1", "Jogador/Equipa 2", "Equipa 2", "Resultado", "Vencedor", "Estado"}, 0) {
+            new Object[] {"Table", "Player/Team 1", "Team 1", "Player/Team 2", "Team 2", "Result", "Winner", "Status"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
             return false;
@@ -55,9 +55,9 @@ public class TopCutPanel extends JPanel {
         wrapper.add(cutButtonsPanel, BorderLayout.NORTH);
 
         JPanel actions = new JPanel(new GridLayout(1, 4, 8, 8));
-        JButton create = new JButton("Criar Top Cut");
-        JButton next = new JButton("Gerar Proxima Ronda");
-        JButton results = new JButton("Inserir Resultado na Aba Resultados");
+        JButton create = new JButton("Create Top Cut");
+        JButton next = new JButton("Generate Next Round");
+        JButton results = new JButton("Enter Result in Results Tab");
         create.addActionListener(e -> frame.createTopCut());
         next.addActionListener(e -> frame.generateNextTopCutRound());
         results.addActionListener(e -> frame.showResultsTab());
@@ -73,7 +73,7 @@ public class TopCutPanel extends JPanel {
         cutButtonsPanel.removeAll();
         if (playoffRounds.isEmpty()) {
             selectedRoundNumber = -1;
-            cutButtonsPanel.add(new JLabel("Top Cut ainda nao criado."));
+            cutButtonsPanel.add(new JLabel("Top Cut has not been created yet."));
             cutButtonsPanel.revalidate();
             cutButtonsPanel.repaint();
             return;
@@ -120,7 +120,7 @@ public class TopCutPanel extends JPanel {
                     team(match.getPlayer2()),
                     result(match),
                     name(match.getWinner()),
-                    match.isCompleted() ? "Completo" : "Aberto"
+                    match.isCompleted() ? "Completed" : "Open"
             });
         }
     }
@@ -142,13 +142,13 @@ public class TopCutPanel extends JPanel {
         if (frame.getEvent().getStatus() == EventStatus.FINISHED && !playoffRounds.isEmpty()) {
             Round last = playoffRounds.get(playoffRounds.size() - 1);
             if (!last.getMatches().isEmpty() && last.getMatches().get(0).getWinner() != null) {
-                return "Campeao: " + last.getMatches().get(0).getWinner().getFullName();
+                return "Champion: " + last.getMatches().get(0).getWinner().getFullName();
             }
         }
         if (playoffRounds.isEmpty()) {
-            return "Top Cut ainda nao criado.";
+            return "Top Cut has not been created yet.";
         }
-        return "Rondas de Top Cut: " + playoffRounds.size();
+        return "Top Cut rounds: " + playoffRounds.size();
     }
 
     private String roundName(Round round) {
@@ -164,7 +164,7 @@ public class TopCutPanel extends JPanel {
             return "";
         }
         return match.getPlayer1GamesWon() + "-" + match.getPlayer2GamesWon()
-                + (match.getDrawGames() > 0 ? " (" + match.getDrawGames() + " emp.)" : "");
+                + (match.getDrawGames() > 0 ? " (" + match.getDrawGames() + " draw(s))" : "");
     }
 
     private String name(Player player) {

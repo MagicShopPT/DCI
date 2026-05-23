@@ -5,7 +5,7 @@
 
     <groupId>pt.premodern</groupId>
     <artifactId>mtg-event-manager</artifactId>
-    <version>1.0.0</version>
+    <version>3.1</version>
     <name>MTG Event Manager</name>
 
     <properties>

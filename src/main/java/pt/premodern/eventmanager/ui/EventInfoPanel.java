@@ -141,10 +141,10 @@ public class EventInfoPanel extends JPanel {
     private String phaseText(EventStatus status) {
         return switch (status) {
             case CREATED -> "Setup";
-            case SWISS_IN_PROGRESS -> "Suico";
-            case SWISS_COMPLETED -> "Suico completo";
+            case SWISS_IN_PROGRESS -> "Swiss";
+            case SWISS_COMPLETED -> "Swiss completed";
             case TOP_CUT_IN_PROGRESS -> "Top Cut";
-            case FINISHED -> "Finalizado";
+            case FINISHED -> "Finished";
         };
     }
 }

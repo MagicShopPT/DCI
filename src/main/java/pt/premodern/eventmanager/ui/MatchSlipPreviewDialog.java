@@ -54,15 +54,15 @@ public class MatchSlipPreviewDialog extends JDialog {
         JTabbedPane tabs = new JTabbedPane();
         int pages = Math.max(1, (int) Math.ceil(matches.size() / (double) SLIPS_PER_PAGE));
         for (int page = 0; page < pages; page++) {
-            tabs.addTab("Página " + (page + 1), new JScrollPane(new SlipPagePanel(page)));
+            tabs.addTab("Page " + (page + 1), new JScrollPane(new SlipPagePanel(page)));
         }
         return tabs;
     }
 
     private JPanel actions() {
         JPanel panel = new JPanel();
-        JButton print = new JButton("Imprimir A4");
-        JButton close = new JButton("Fechar");
+        JButton print = new JButton("Print A4");
+        JButton close = new JButton("Close");
         print.addActionListener(e -> printSlips());
         close.addActionListener(e -> dispose());
         panel.add(print);
@@ -90,7 +90,7 @@ public class MatchSlipPreviewDialog extends JDialog {
             try {
                 job.print();
             } catch (PrinterException exception) {
-                JOptionPane.showMessageDialog(this, exception.getMessage(), "Erro de impressão", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, exception.getMessage(), "Printing error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

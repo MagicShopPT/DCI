@@ -65,7 +65,7 @@ public class PenaltyEntryDialog extends JDialog {
     private final JComboBox<String> penaltyCombo = new JComboBox<>(PENALTIES);
     private final JTextArea description = new JTextArea(4, 40);
     private final DefaultTableModel historyModel = new DefaultTableModel(
-            new Object[] {"Ronda", "Infração", "Penalty", "Aplicada", "Descrição"}, 0) {
+            new Object[] {"Round", "Infraction", "Penalty", "Applied", "Description"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
             return false;
@@ -96,14 +96,14 @@ public class PenaltyEntryDialog extends JDialog {
         c.anchor = GridBagConstraints.WEST;
         c.fill = GridBagConstraints.HORIZONTAL;
 
-        addRow(panel, c, 0, "Jogador", playerCombo);
-        addRow(panel, c, 1, "Infração", infractionCombo);
+        addRow(panel, c, 0, "Player", playerCombo);
+        addRow(panel, c, 1, "Infraction", infractionCombo);
         addRow(panel, c, 2, "Penalty", penaltyCombo);
 
         c.gridx = 0;
         c.gridy = 3;
         c.weightx = 0;
-        panel.add(new JLabel("Descrição"), c);
+        panel.add(new JLabel("Description"), c);
         c.gridx = 1;
         c.weightx = 1;
         description.setLineWrap(true);
@@ -117,7 +117,7 @@ public class PenaltyEntryDialog extends JDialog {
     private JScrollPane history() {
         historyTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         JScrollPane scroll = new JScrollPane(historyTable);
-        scroll.setBorder(BorderFactory.createTitledBorder("Outras penalties do jogador"));
+        scroll.setBorder(BorderFactory.createTitledBorder("Other penalties for this player"));
         return scroll;
     }
 
@@ -179,7 +179,7 @@ public class PenaltyEntryDialog extends JDialog {
     private void submit() {
         Player player = selectedPlayer();
         if (player == null) {
-            frame.showInfo("Seleciona um jogador.");
+            frame.showInfo("Select a player.");
             return;
         }
         try {

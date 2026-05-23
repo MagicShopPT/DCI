@@ -18,13 +18,13 @@ public class PenaltyService {
 
     public PenaltyEntry addPenalty(Event event, Player player, String infraction, String penalty, String description) {
         if (event == null || player == null) {
-            throw new IllegalArgumentException("Seleciona um jogador.");
+            throw new IllegalArgumentException("Select a player.");
         }
         if (infraction == null || infraction.isBlank()) {
-            throw new IllegalArgumentException("Seleciona uma infração.");
+            throw new IllegalArgumentException("Select an infraction.");
         }
         if (penalty == null || penalty.isBlank()) {
-            throw new IllegalArgumentException("Seleciona uma penalty.");
+            throw new IllegalArgumentException("Select a penalty.");
         }
 
         String appliedPenalty = effectivePenalty(player, infraction, penalty);
@@ -48,7 +48,7 @@ public class PenaltyService {
         if (GAME_LOSS.equals(appliedPenalty) || MATCH_LOSS.equals(appliedPenalty)) {
             Match match = currentMatch(event, player);
             if (match == null || match.isBye() || opponent(match, player) == null) {
-                throw new IllegalStateException("Esta penalty precisa de um adversário na ronda atual.");
+                throw new IllegalStateException("This penalty needs an opponent in the current round.");
             }
         }
     }

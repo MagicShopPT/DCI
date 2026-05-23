@@ -8,15 +8,18 @@ import java.awt.Insets;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.event.TableModelEvent;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableRowSorter;
 
 import pt.premodern.eventmanager.model.Match;
 import pt.premodern.eventmanager.model.PenaltyEntry;
@@ -34,12 +37,12 @@ public class ResultsPanel extends JPanel {
     private final JComboBox<String> p1Games = gameCombo();
     private final JComboBox<String> p2Games = gameCombo();
     private final JComboBox<String> drawGames = gameCombo();
-    private final JLabel p1Label = new JLabel("Jogador 1");
-    private final JLabel p2Label = new JLabel("Jogador 2");
+    private final JLabel p1Label = new JLabel("Player 1");
+    private final JLabel p2Label = new JLabel("Player 2");
     private boolean refreshing;
 
     private final DefaultTableModel model = new DefaultTableModel(
-            new Object[] {"Mesa", "Jogador 1", "Equipa J1", "DROP J1", "Jogador 2", "Equipa J2", "DROP J2", "Resultado", "Vencedor", "Estado"}, 0) {
+            new Object[] {"Table", "Player 1", "Team P1", "DROP P1", "Player 2", "Team P2", "DROP P2", "Result", "Winner", "Status"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
             return column == 3 || column == 6;
@@ -47,10 +50,14 @@ public class ResultsPanel extends JPanel {
 
         @Override
         public Class<?> getColumnClass(int columnIndex) {
+            if (columnIndex == 0) {
+                return Integer.class;
+            }
             return columnIndex == 3 || columnIndex == 6 ? Boolean.class : String.class;
         }
     };
     private final JTable table = new JTable(model);
+    private final TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
 
     public ResultsPanel(MainFrame frame) {
         super(new BorderLayout(12, 12));
@@ -59,6 +66,8 @@ public class ResultsPanel extends JPanel {
         add(toolbar(), BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
         add(resultForm(), BorderLayout.SOUTH);
+        configureSorting();
+        alignTableColumnLeft();
 
         roundCombo.addActionListener(e -> {
             if (!refreshing) {
@@ -110,9 +119,9 @@ public class ResultsPanel extends JPanel {
 
     private JPanel toolbar() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        panel.add(new JLabel("Ronda"));
+        panel.add(new JLabel("Round"));
         panel.add(roundCombo);
-        JButton slips = new JButton("Gerar Match Result Slips");
+        JButton slips = new JButton("Generate Match Result Slips");
         slips.addActionListener(e -> showMatchSlips());
         panel.add(slips);
         return panel;
@@ -120,7 +129,7 @@ public class ResultsPanel extends JPanel {
 
     private JPanel resultForm() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Inserir ou alterar resultado"));
+        panel.setBorder(BorderFactory.createTitledBorder("Enter or edit result"));
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(4, 4, 4, 4);
 
@@ -134,11 +143,11 @@ public class ResultsPanel extends JPanel {
         c.gridx = 3;
         panel.add(p2Games, c);
         c.gridx = 4;
-        panel.add(new JLabel("Empates"), c);
+        panel.add(new JLabel("Draws"), c);
         c.gridx = 5;
         panel.add(drawGames, c);
 
-        JButton confirm = new JButton("Confirmar / Alterar Resultado");
+        JButton confirm = new JButton("Confirm / Change Result");
         confirm.addActionListener(e -> submitResult());
         c.gridx = 6;
         panel.add(confirm, c);
@@ -152,7 +161,7 @@ public class ResultsPanel extends JPanel {
         if (round != null) {
             for (Match match : round.getMatches()) {
                 model.addRow(new Object[] {
-                        String.valueOf(match.getTableNumber()),
+                        match.getTableNumber(),
                         name(match.getPlayer1()),
                         team(match.getPlayer1()),
                         droppedInRound(match.getPlayer1(), round),
@@ -161,11 +170,25 @@ public class ResultsPanel extends JPanel {
                         droppedInRound(match.getPlayer2(), round),
                         result(match),
                         name(match.getWinner()),
-                        match.isCompleted() ? "Completo" : "Aberto"
+                        match.isCompleted() ? "Completed" : "Open"
                 });
             }
         }
         refreshing = false;
+    }
+
+    private void configureSorting() {
+        table.setRowSorter(sorter);
+        sorter.setSortsOnUpdates(true);
+        for (int column = 0; column < model.getColumnCount(); column++) {
+            sorter.setSortable(column, column != 3 && column != 6);
+        }
+    }
+
+    private void alignTableColumnLeft() {
+        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
+        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
+        table.getColumnModel().getColumn(0).setCellRenderer(leftRenderer);
     }
 
     private void submitResult() {
@@ -175,8 +198,8 @@ public class ResultsPanel extends JPanel {
             return;
         }
         try {
-            int p1 = selectedGame(p1Games, "Jogos do jogador 1");
-            int p2 = selectedGame(p2Games, "Jogos do jogador 2");
+            int p1 = selectedGame(p1Games, "Player 1 games");
+            int p2 = selectedGame(p2Games, "Player 2 games");
             int draws = optionalGame(drawGames);
             validateGameLossMinimums(round, match, p1, p2);
             if (round.isPlayoffRound()) {
@@ -214,19 +237,19 @@ public class ResultsPanel extends JPanel {
 
     private Match selectedMatch(Round round) {
         if (round == null) {
-            frame.showInfo("Não existe ronda selecionada.");
+            frame.showInfo("There is no selected round.");
             return null;
         }
         int row = table.getSelectedRow();
         if (row < 0) {
-            frame.showInfo("Seleciona um match.");
+            frame.showInfo("Select a match.");
             return null;
         }
         int modelRow = table.convertRowIndexToModel(row);
         List<Match> matches = round.getMatches();
         Match match = modelRow >= 0 && modelRow < matches.size() ? matches.get(modelRow) : null;
         if (match != null && match.isBye()) {
-            frame.showInfo("Um bye não aceita resultado manual.");
+            frame.showInfo("A bye does not accept a manual result.");
             return null;
         }
         return match;
@@ -235,7 +258,7 @@ public class ResultsPanel extends JPanel {
     private int selectedGame(JComboBox<String> combo, String label) {
         String value = (String) combo.getSelectedItem();
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(label + ": escolhe 0, 1 ou 2.");
+            throw new IllegalArgumentException(label + ": choose 0, 1, or 2.");
         }
         return Integer.parseInt(value);
     }
@@ -248,8 +271,8 @@ public class ResultsPanel extends JPanel {
     private void updateSelectedPlayerLabels() {
         Round round = selectedRound();
         Match match = selectedMatchSilently(round);
-        p1Label.setText(match == null ? "Jogador 1" : name(match.getPlayer1()));
-        p2Label.setText(match == null ? "Jogador 2" : name(match.getPlayer2()));
+        p1Label.setText(match == null ? "Player 1" : name(match.getPlayer1()));
+        p2Label.setText(match == null ? "Player 2" : name(match.getPlayer2()));
     }
 
     private void updateGameComboOptions() {
@@ -278,10 +301,10 @@ public class ResultsPanel extends JPanel {
 
     private void validateGameLossMinimums(Round round, Match match, int p1, int p2) {
         if (hasGameLossInRound(match.getPlayer2(), round) && p1 < 1) {
-            throw new IllegalArgumentException(name(match.getPlayer1()) + " recebeu 1 game win automático por Game Loss do adversário.");
+            throw new IllegalArgumentException(name(match.getPlayer1()) + " received 1 automatic game win because the opponent has a Game Loss.");
         }
         if (hasGameLossInRound(match.getPlayer1(), round) && p2 < 1) {
-            throw new IllegalArgumentException(name(match.getPlayer2()) + " recebeu 1 game win automático por Game Loss do adversário.");
+            throw new IllegalArgumentException(name(match.getPlayer2()) + " received 1 automatic game win because the opponent has a Game Loss.");
         }
     }
 
@@ -354,11 +377,11 @@ public class ResultsPanel extends JPanel {
     private void showMatchSlips() {
         Round round = selectedRound();
         if (round == null) {
-            frame.showInfo("Não existe ronda selecionada.");
+            frame.showInfo("There is no selected round.");
             return;
         }
         if (round.getMatches().stream().noneMatch(match -> !match.isBye())) {
-            frame.showInfo("A ronda selecionada não tem matches para imprimir.");
+            frame.showInfo("The selected round has no matches to print.");
             return;
         }
         new MatchSlipPreviewDialog(frame, frame.getEvent(), round).setVisible(true);
@@ -372,7 +395,7 @@ public class ResultsPanel extends JPanel {
             return "";
         }
         return match.getPlayer1GamesWon() + "-" + match.getPlayer2GamesWon()
-                + (match.getDrawGames() > 0 ? " (" + match.getDrawGames() + " emp.)" : "");
+                + (match.getDrawGames() > 0 ? " (" + match.getDrawGames() + " draw(s))" : "");
     }
 
     private String name(Player player) {
@@ -390,7 +413,7 @@ public class ResultsPanel extends JPanel {
     private record RoundItem(Round round) {
         @Override
         public String toString() {
-            return (round.isPlayoffRound() ? "Top Cut " : "Suíça ") + round.getNumber();
+            return (round.isPlayoffRound() ? "Top Cut " : "Swiss ") + round.getNumber();
         }
     }
 }

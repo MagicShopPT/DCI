@@ -10,10 +10,12 @@ import java.util.stream.Collectors;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -56,7 +58,7 @@ public class MainFrame extends JFrame {
 
     public MainFrame() {
         super("MTG Event Manager");
-        this.event = eventService.createEvent("Novo Evento", EventType.SWISS_ONLY, 0);
+        this.event = eventService.createEvent("New Event", EventType.SWISS_ONLY, 0);
 
         this.eventPanel = new EventPanel(this);
         this.eventInfoPanel = new EventInfoPanel(this);
@@ -74,10 +76,10 @@ public class MainFrame extends JFrame {
         add(eventInfoPanel, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
 
-        tabs.addTab("Evento", eventPanel);
-        tabs.addTab("Jogadores", playerPanel);
+        tabs.addTab("Event", eventPanel);
+        tabs.addTab("Players", playerPanel);
         tabs.addTab("Pairings", pairingsPanel);
-        tabs.addTab("Resultados", resultsPanel);
+        tabs.addTab("Results", resultsPanel);
         tabs.addTab("Standings", standingsPanel);
         tabs.addTab("Top Cut", topCutPanel);
         tabs.addTab("Clock", clockPanel);
@@ -149,9 +151,12 @@ public class MainFrame extends JFrame {
             }
             String players = event.getPlayers().stream()
                     .filter(player -> player.hasTeam() && player.getTeam().equalsIgnoreCase(team))
-                    .map(player -> "<div>" + escapeHtml(player.getFullName()) + "</div>")
+                    .map(player -> "<div style='font-size:16pt;font-weight:normal;'>" + escapeHtml(player.getFullName()) + "</div>")
                     .collect(Collectors.joining());
-            return "<html><b>" + escapeHtml(team) + "</b>" + players + "</html>";
+            return "<html><div style='text-align:left;'>"
+                    + "<div style='font-size:18pt;font-weight:bold;'>" + escapeHtml(team) + "</div>"
+                    + players
+                    + "</div></html>";
         }
         PlayerWinner winner = individualWinner();
         return winner.player() == null ? "-" : winner.player().getFullName();
@@ -162,7 +167,7 @@ public class MainFrame extends JFrame {
     }
 
     public void showError(Exception exception) {
-        JOptionPane.showMessageDialog(this, exception.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(this, exception.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void generateSwissRound() {
@@ -211,15 +216,13 @@ public class MainFrame extends JFrame {
                 event.setStatus(event.isHasTopCut() ? EventStatus.SWISS_COMPLETED : EventStatus.FINISHED);
             } else if (round.isPlayoffRound()) {
                 try {
-                    Round next = topCutService.generateNextTopCutRound(event);
-                    if (next != null) {
-                        autoSaveEvent();
-                    }
+                    topCutService.generateNextTopCutRound(event);
                 } catch (Exception ignored) {
                     // The Top Cut panel still offers manual generation if the round is not ready.
                 }
             }
         }
+        autoSaveEvent();
         refreshAll();
         if (!finishedBefore && event.getStatus() == EventStatus.FINISHED) {
             showWinnerPopup();
@@ -228,12 +231,12 @@ public class MainFrame extends JFrame {
 
     public void importPlayersFromCsv() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Importar Jogadores CSV");
+        chooser.setDialogTitle("Import Players CSV");
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
                 int imported = eventService.importPlayers(event, chooser.getSelectedFile());
                 refreshAll();
-                showInfo(imported + " jogadores importados.");
+                showInfo(imported + " player(s) imported.");
             } catch (Exception exception) {
                 showError(exception);
             }
@@ -242,7 +245,7 @@ public class MainFrame extends JFrame {
 
     public void showPenaltyEntry(Player player) {
         if (event.getPlayers().isEmpty()) {
-            showInfo("Não existem jogadores no evento.");
+            showInfo("There are no players in the event.");
             return;
         }
         new PenaltyEntryDialog(this, player).setVisible(true);
@@ -257,9 +260,10 @@ public class MainFrame extends JFrame {
         if (round != null && round.isCompleted()) {
             afterResultSubmitted(round);
         } else {
+            autoSaveEvent();
             refreshAll();
         }
-        showInfo("Penalty registada: " + entry.getAppliedPenalty() + ".");
+        showInfo("Penalty recorded: " + entry.getAppliedPenalty() + ".");
     }
 
     private JMenuBar createMenuBar() {
@@ -272,18 +276,18 @@ public class MainFrame extends JFrame {
     }
 
     private JMenu fileMenu() {
-        JMenu file = new JMenu("Ficheiro");
-        JMenuItem newEvent = item("Novo Evento", () -> tabs.setSelectedComponent(eventPanel));
-        JMenuItem open = item("Abrir Evento", this::openEvent);
-        JMenuItem save = item("Guardar Evento", this::saveEvent);
-        JMenuItem saveAs = item("Guardar Como", this::saveEventAs);
-        JMenuItem importPlayers = item("Importar Jogadores CSV", this::importPlayersFromCsv);
-        JMenu export = new JMenu("Exportar CSV");
-        export.add(item("Lista de Jogadores", () -> exportCsv("jogadores", selected -> eventService.exportPlayers(event, selected))));
-        export.add(item("Pairings da Ronda Atual", () -> exportCsv("pairings", selected -> eventService.exportCurrentPairings(event, selected))));
+        JMenu file = new JMenu("File");
+        JMenuItem newEvent = item("New Event", () -> tabs.setSelectedComponent(eventPanel));
+        JMenuItem open = item("Open Event", this::openEvent);
+        JMenuItem save = item("Save Event", this::saveEvent);
+        JMenuItem saveAs = item("Save As", this::saveEventAs);
+        JMenuItem importPlayers = item("Import Players CSV", this::importPlayersFromCsv);
+        JMenu export = new JMenu("Export CSV");
+        export.add(item("Player List", () -> exportCsv("players", selected -> eventService.exportPlayers(event, selected))));
+        export.add(item("Current Round Pairings", () -> exportCsv("pairings", selected -> eventService.exportCurrentPairings(event, selected))));
         export.add(item("Standings", () -> exportCsv("standings", selected -> eventService.exportStandings(standingService.calculateStandings(event), selected))));
-        export.add(item("Resultados", () -> exportCsv("resultados", selected -> eventService.exportResults(event, selected))));
-        JMenuItem exit = item("Sair", this::dispose);
+        export.add(item("Results", () -> exportCsv("results", selected -> eventService.exportResults(event, selected))));
+        JMenuItem exit = item("Exit", this::dispose);
         file.add(newEvent);
         file.add(open);
         file.add(save);
@@ -296,20 +300,20 @@ public class MainFrame extends JFrame {
     }
 
     private JMenu playersMenu() {
-        JMenu players = new JMenu("Jogadores");
-        players.add(item("Adicionar Jogador", () -> tabs.setSelectedComponent(playerPanel)));
-        players.add(item("Lista de Jogadores", () -> tabs.setSelectedComponent(playerPanel)));
-        players.add(item("Importar Jogadores CSV", this::importPlayersFromCsv));
+        JMenu players = new JMenu("Players");
+        players.add(item("Add Player", () -> tabs.setSelectedComponent(playerPanel)));
+        players.add(item("Player List", () -> tabs.setSelectedComponent(playerPanel)));
+        players.add(item("Import Players CSV", this::importPlayersFromCsv));
         players.add(item("Penalty Entry", () -> showPenaltyEntry(null)));
         return players;
     }
 
     private JMenu eventMenu() {
-        JMenu eventMenu = new JMenu("Evento");
-        eventMenu.add(item("Gerar Ronda", this::generateSwissRound));
-        eventMenu.add(item("Inserir Resultados", () -> tabs.setSelectedComponent(resultsPanel)));
-        eventMenu.add(item("Ver Standings", () -> tabs.setSelectedComponent(standingsPanel)));
-        eventMenu.add(item("Criar Top Cut", this::createTopCut));
+        JMenu eventMenu = new JMenu("Event");
+        eventMenu.add(item("Generate Round", this::generateSwissRound));
+        eventMenu.add(item("Enter Results", () -> tabs.setSelectedComponent(resultsPanel)));
+        eventMenu.add(item("View Standings", () -> tabs.setSelectedComponent(standingsPanel)));
+        eventMenu.add(item("Create Top Cut", this::createTopCut));
         eventMenu.add(item("Clock", () -> tabs.setSelectedComponent(clockPanel)));
         return eventMenu;
     }
@@ -327,9 +331,38 @@ public class MainFrame extends JFrame {
     }
 
     private JMenu helpMenu() {
-        JMenu help = new JMenu("Ajuda");
-        help.add(item("Sobre", () -> showInfo("MTG Event Manager\nGestao de torneios suicos com Top Cut.")));
+        JMenu help = new JMenu("Help");
+        help.add(item("User Manual", this::showHelpManual));
+        help.add(item("About", this::showAboutDialog));
         return help;
+    }
+
+    private void showHelpManual() {
+        showInfo("""
+                MTG Event Manager User Manual
+
+                Event: create a new event, choose Swiss only or Swiss with Top Cut, set the Top Cut size, and enable team events when players belong to teams.
+                Players: add, edit, remove, import, drop players, and open Penalty Entry for the selected player.
+                Pairings: generate the next Swiss round, inspect each round's pairings, and search the pairing table.
+                Results: choose a round, enter match scores, mark player drops for that round, generate match result slips, and click table headers to sort results ascending or descending.
+                Standings: refresh player standings, and switch to team standings when the event is a team event.
+                Top Cut: create the playoff bracket after Swiss rounds, generate following playoff rounds, and enter playoff results from the Results tab.
+                Clock: set the round duration, start, pause, reset, and hear the round-over alert.
+                File: open and save events, import players from CSV, export players, pairings, standings, and results to CSV.
+                Penalty Entry: record infractions, penalties, automatic upgrades, and related player history.
+                """);
+    }
+
+    private void showAboutDialog() {
+        JPanel panel = new JPanel(new BorderLayout(12, 12));
+        panel.add(new JLabel("<html><b>MTG Event Manager</b><br>"
+                + "Swiss tournament management with Top Cut.<br><br>"
+                + "Creator: Vitor Silva aka MagicShop<br>"
+                + "Premodern Portugal: www.premodern.pt</html>"), BorderLayout.CENTER);
+        JLabel version = new JLabel("v3.1");
+        version.setHorizontalAlignment(JLabel.RIGHT);
+        panel.add(version, BorderLayout.SOUTH);
+        JOptionPane.showMessageDialog(this, panel, "About", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private JMenuItem item(String label, ThrowingRunnable action) {
@@ -360,7 +393,7 @@ public class MainFrame extends JFrame {
             return;
         }
         storageService.saveEvent(event, currentFile);
-        showInfo("Evento guardado.");
+        showInfo("Event saved.");
     }
 
     private void saveEventAs() throws IOException {
@@ -369,7 +402,7 @@ public class MainFrame extends JFrame {
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             currentFile = chooser.getSelectedFile();
             storageService.saveEvent(event, currentFile);
-            showInfo("Evento guardado.");
+            showInfo("Event saved.");
         }
     }
 
@@ -379,7 +412,7 @@ public class MainFrame extends JFrame {
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
                 action.export(chooser.getSelectedFile());
-                showInfo("CSV exportado.");
+                showInfo("CSV exported.");
             } catch (Exception exception) {
                 showError(exception);
             }
@@ -387,7 +420,7 @@ public class MainFrame extends JFrame {
     }
 
     private String safeFileName(String value) {
-        return value == null ? "evento" : value.replaceAll("[^a-zA-Z0-9._-]", "_");
+        return value == null ? "event" : value.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 
     private void refreshAfterRoundGeneration(Round round) {
@@ -400,7 +433,7 @@ public class MainFrame extends JFrame {
         try {
             storageService.saveEvent(event, autoSaveFile());
         } catch (IOException exception) {
-            showError(new IOException("A ronda foi gerada, mas o autosave falhou: " + exception.getMessage(), exception));
+            showError(new IOException("The round was generated, but autosave failed: " + exception.getMessage(), exception));
         }
     }
 
@@ -419,7 +452,7 @@ public class MainFrame extends JFrame {
                         && match.getPlayer1().getTeam().equalsIgnoreCase(match.getPlayer2().getTeam()))
                 .toList();
         if (!sameTeamMatches.isEmpty()) {
-            showInfo("Aviso: existem emparelhamentos entre jogadores da mesma equipa por impossibilidade tecnica.");
+            showInfo("Warning: some pairings are between players from the same team because no other valid pairing was available.");
         }
     }
 
@@ -434,7 +467,7 @@ public class MainFrame extends JFrame {
         }
         JOptionPane.showMessageDialog(this,
                 htmlWinner(winner.player().getFullName(), winner.subtitle()),
-                "Vencedor",
+                "Winner",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -448,18 +481,18 @@ public class MainFrame extends JFrame {
                 .map(player -> "<div>" + escapeHtml(player.getFullName()) + "</div>")
                 .collect(Collectors.joining());
         JOptionPane.showMessageDialog(this,
-                htmlWinner(team, players.isBlank() ? "Equipa vencedora" : players),
-                "Equipa Vencedora",
+                htmlWinner(team, players.isBlank() ? "Winning team" : players),
+                "Winning Team",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
     private PlayerWinner individualWinner() {
         Player champion = topCutService.getChampion(event);
         if (champion != null) {
-            return new PlayerWinner(champion, "Campeao do evento");
+            return new PlayerWinner(champion, "Event champion");
         }
         List<Standing> standings = standingService.calculateStandings(event);
-        return standings.isEmpty() ? new PlayerWinner(null, "") : new PlayerWinner(standings.get(0).getPlayer(), "Vencedor dos standings");
+        return standings.isEmpty() ? new PlayerWinner(null, "") : new PlayerWinner(standings.get(0).getPlayer(), "Standings winner");
     }
 
     private String winningTeamName() {
@@ -475,7 +508,7 @@ public class MainFrame extends JFrame {
 
     private String htmlWinner(String title, String body) {
         return "<html><div style='text-align:center;width:360px;'>"
-                + "<div style='font-size:14px;'>Vencedor</div>"
+                + "<div style='font-size:14px;'>Winner</div>"
                 + "<h1 style='color:#148c50;'>" + escapeHtml(title) + "</h1>"
                 + "<div style='font-size:12px;'>" + body + "</div>"
                 + "</div></html>";

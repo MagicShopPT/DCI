@@ -1,31 +1,31 @@
 # MTG Event Manager
 
-Aplicação desktop Java + Swing para gerir torneios de Magic: The Gathering com rondas suíças, standings, persistência JSON e Top Cut.
+Java + Swing desktop application for managing Magic: The Gathering tournaments with Swiss rounds, standings, JSON persistence, and Top Cut.
 
-## Requisitos
+## Requirements
 
-- JDK 17 ou superior
-- Maven 3.9 ou superior
+- JDK 17 or higher
+- Maven 3.9 or higher
 
-## Executar
+## Run
 
 ```bash
 mvn clean compile exec:java
 ```
 
-## Gerar jar
+## Build jar
 
 ```bash
 mvn clean package
 ```
 
-## Funcionalidades
+## Features
 
-- Criação de eventos suíços ou suíços com Top Cut.
-- Gestão de jogadores com validação de e-mail e bloqueio de duplicados.
-- Pairings suíços com bye, prevenção de repetição de adversários e preferência por evitar equipas iguais.
-- Inserção de resultados em jogos.
-- Standings com OMW%, GW% e OGW%.
-- Top Cut por seed suíço.
-- Guardar e carregar eventos em JSON.
-- Exportação CSV de jogadores, pairings, standings e resultados.
+- Create Swiss-only events or Swiss events with Top Cut.
+- Manage players with e-mail validation and duplicate blocking.
+- Swiss pairings with bye support, opponent repeat prevention, and a preference for avoiding same-team pairings.
+- Enter match results.
+- Standings with OMW%, GW%, and OGW%.
+- Top Cut by Swiss seed.
+- Save and load events as JSON.
+- Export players, pairings, standings, and results to CSV.

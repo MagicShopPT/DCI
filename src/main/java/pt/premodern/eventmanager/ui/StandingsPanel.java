@@ -22,8 +22,8 @@ public class StandingsPanel extends JPanel {
     private final MainFrame frame;
     private final NumberFormat percent = NumberFormat.getPercentInstance(Locale.getDefault());
     private final JLabel roundLabel = new JLabel();
-    private final JButton teamStandings = new JButton("Standings por Equipas");
-    private final JButton playerStandings = new JButton("Standings por Jogadores");
+    private final JButton teamStandings = new JButton("Team Standings");
+    private final JButton playerStandings = new JButton("Player Standings");
     private final DefaultTableModel model = new DefaultTableModel(0, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
@@ -40,7 +40,7 @@ public class StandingsPanel extends JPanel {
         percent.setMaximumFractionDigits(2);
         setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton refresh = new JButton("Atualizar Standings");
+        JButton refresh = new JButton("Refresh Standings");
         refresh.addActionListener(e -> refreshData());
         teamStandings.addActionListener(e -> {
             showingTeams = true;
@@ -65,12 +65,12 @@ public class StandingsPanel extends JPanel {
         if (!frame.getEvent().isTeamEvent()) {
             showingTeams = false;
         }
-        roundLabel.setText("Standings apos ronda " + frame.getEvent().getCurrentRoundNumber());
+        roundLabel.setText("Standings after round " + frame.getEvent().getCurrentRoundNumber());
         if (showingTeams) {
             populateTeamStandings();
             return;
         }
-        model.setColumnIdentifiers(new Object[] {"Posicao", "Nome", "Equipa", "Match Points", "OMW%", "GW%", "OGW%"});
+        model.setColumnIdentifiers(new Object[] {"Position", "Name", "Team", "Match Points", "OMW%", "GW%", "OGW%"});
         for (Standing standing : frame.getStandingService().calculateStandings(frame.getEvent())) {
             Player player = standing.getPlayer();
             model.addRow(new Object[] {
@@ -86,7 +86,7 @@ public class StandingsPanel extends JPanel {
     }
 
     private void populateTeamStandings() {
-        model.setColumnIdentifiers(new Object[] {"Posicao", "Equipa", "Jogadores", "Match Points", "OMW%", "GW%", "OGW%"});
+        model.setColumnIdentifiers(new Object[] {"Position", "Team", "Players", "Match Points", "OMW%", "GW%", "OGW%"});
         for (TeamStanding standing : frame.getStandingService().calculateTeamStandings(frame.getEvent())) {
             model.addRow(new Object[] {
                     standing.rank(),

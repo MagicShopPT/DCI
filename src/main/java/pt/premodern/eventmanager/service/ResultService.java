@@ -16,11 +16,11 @@ public class ResultService {
 
     private void submitResult(Match match, int p1GamesWon, int p2GamesWon, int draws, boolean topCut) {
         if (match == null || match.isBye()) {
-            throw new IllegalArgumentException("Este match não aceita resultado manual.");
+            throw new IllegalArgumentException("This match does not accept a manual result.");
         }
         validateGames(p1GamesWon, p2GamesWon, draws);
         if (topCut && p1GamesWon == p2GamesWon) {
-            throw new IllegalArgumentException("No Top Cut não pode haver empate.");
+            throw new IllegalArgumentException("Top Cut matches cannot end in a draw.");
         }
 
         match.setPlayer1GamesWon(p1GamesWon);
@@ -76,11 +76,11 @@ public class ResultService {
 
     private void validateGames(int p1GamesWon, int p2GamesWon, int draws) {
         if (p1GamesWon < 0 || p1GamesWon > 2 || p2GamesWon < 0 || p2GamesWon > 2 || draws < 0 || draws > 2) {
-            throw new IllegalArgumentException("Cada campo de jogos só pode ser 0, 1 ou 2.");
+            throw new IllegalArgumentException("Each game field can only be 0, 1, or 2.");
         }
         int total = p1GamesWon + p2GamesWon + draws;
         if (total == 0 || total > 3) {
-            throw new IllegalArgumentException("Um match à melhor de 3 deve ter entre 1 e 3 jogos registados.");
+            throw new IllegalArgumentException("A best-of-3 match must have between 1 and 3 recorded games.");
         }
     }
 

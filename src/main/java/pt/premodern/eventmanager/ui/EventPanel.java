@@ -21,7 +21,7 @@ public class EventPanel extends JPanel {
     private final JTextField nameField = new JTextField(28);
     private final JComboBox<EventType> typeCombo = new JComboBox<>(EventType.values());
     private final JComboBox<Integer> topCutCombo = new JComboBox<>(new Integer[] {4, 8, 16, 32, 64});
-    private final JCheckBox teamEventCheck = new JCheckBox("Evento por equipas");
+    private final JCheckBox teamEventCheck = new JCheckBox("Team event");
     private final JLabel statusLabel = new JLabel();
     private final JLabel playersLabel = new JLabel();
     private final JLabel roundLabel = new JLabel();
@@ -32,6 +32,7 @@ public class EventPanel extends JPanel {
         super(new BorderLayout(12, 12));
         this.frame = frame;
         setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        configureSummaryLabels();
         add(form(), BorderLayout.NORTH);
         add(summary(), BorderLayout.CENTER);
     }
@@ -43,7 +44,7 @@ public class EventPanel extends JPanel {
         topCutCombo.setSelectedItem(event.getTopCutSize() == 0 ? 8 : event.getTopCutSize());
         teamEventCheck.setSelected(event.isTeamEvent());
         topCutCombo.setEnabled(typeCombo.getSelectedItem() == EventType.SWISS_WITH_TOP_CUT);
-        statusLabel.setText(event.getStatus().name());
+        statusLabel.setText(statusText(event.getStatus()));
         playersLabel.setText(String.valueOf(event.getPlayers().size()));
         roundLabel.setText(String.valueOf(event.getCurrentRoundNumber()));
         roundsLabel.setText(String.valueOf(event.getTotalSwissRounds()));
@@ -52,13 +53,13 @@ public class EventPanel extends JPanel {
 
     private JPanel form() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Configuracao do Evento"));
+        panel.setBorder(BorderFactory.createTitledBorder("Event Setup"));
         GridBagConstraints c = constraints();
-        addRow(panel, c, 0, "Nome", nameField);
-        addRow(panel, c, 1, "Tipo", typeCombo);
+        addRow(panel, c, 0, "Name", nameField);
+        addRow(panel, c, 1, "Type", typeCombo);
         addRow(panel, c, 2, "Top Cut (4/8/16/32/64)", topCutCombo);
-        addRow(panel, c, 3, "Formato", teamEventCheck);
-        JButton create = new JButton("Criar Novo Evento");
+        addRow(panel, c, 3, "Format", teamEventCheck);
+        JButton create = new JButton("Create New Event");
         create.addActionListener(e -> createEvent());
         c.gridx = 1;
         c.gridy = 4;
@@ -70,13 +71,20 @@ public class EventPanel extends JPanel {
 
     private JPanel summary() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Estado Atual"));
+        panel.setBorder(BorderFactory.createTitledBorder("Current Status"));
         GridBagConstraints c = constraints();
-        addRow(panel, c, 0, "Estado", statusLabel);
-        addRow(panel, c, 1, "Jogadores", playersLabel);
-        addRow(panel, c, 2, "Ronda atual", roundLabel);
-        addRow(panel, c, 3, "Rondas suicas", roundsLabel);
-        addRow(panel, c, 4, "Vencedor", winnerLabel);
+        addRow(panel, c, 0, "Status", statusLabel);
+        addRow(panel, c, 1, "Players", playersLabel);
+        addRow(panel, c, 2, "Current round", roundLabel);
+        addRow(panel, c, 3, "Swiss rounds", roundsLabel);
+        addRow(panel, c, 4, "Winner", winnerLabel);
+        c.gridx = 0;
+        c.gridy = 5;
+        c.gridwidth = 2;
+        c.weightx = 1;
+        c.weighty = 1;
+        c.fill = GridBagConstraints.BOTH;
+        panel.add(new JPanel(), c);
         return panel;
     }
 
@@ -89,19 +97,48 @@ public class EventPanel extends JPanel {
     private GridBagConstraints constraints() {
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6, 6, 6, 6);
-        c.anchor = GridBagConstraints.WEST;
+        c.anchor = GridBagConstraints.NORTHWEST;
         return c;
     }
 
     private void addRow(JPanel panel, GridBagConstraints c, int row, String label, java.awt.Component component) {
         c.gridx = 0;
         c.gridy = row;
+        c.gridwidth = 1;
         c.weightx = 0;
-        panel.add(new JLabel(label), c);
+        c.weighty = 0;
+        c.fill = GridBagConstraints.NONE;
+        JLabel rowLabel = new JLabel(label);
+        rowLabel.setHorizontalAlignment(JLabel.LEFT);
+        rowLabel.setVerticalAlignment(JLabel.TOP);
+        panel.add(rowLabel, c);
         c.gridx = 1;
         c.weightx = 1;
         c.fill = GridBagConstraints.HORIZONTAL;
         panel.add(component, c);
         c.fill = GridBagConstraints.NONE;
+    }
+
+    private void configureSummaryLabels() {
+        statusLabel.setHorizontalAlignment(JLabel.LEFT);
+        playersLabel.setHorizontalAlignment(JLabel.LEFT);
+        roundLabel.setHorizontalAlignment(JLabel.LEFT);
+        roundsLabel.setHorizontalAlignment(JLabel.LEFT);
+        winnerLabel.setHorizontalAlignment(JLabel.LEFT);
+        statusLabel.setVerticalAlignment(JLabel.TOP);
+        playersLabel.setVerticalAlignment(JLabel.TOP);
+        roundLabel.setVerticalAlignment(JLabel.TOP);
+        roundsLabel.setVerticalAlignment(JLabel.TOP);
+        winnerLabel.setVerticalAlignment(JLabel.TOP);
+    }
+
+    private String statusText(pt.premodern.eventmanager.model.EventStatus status) {
+        return switch (status) {
+            case CREATED -> "Setup";
+            case SWISS_IN_PROGRESS -> "Swiss in progress";
+            case SWISS_COMPLETED -> "Swiss completed";
+            case TOP_CUT_IN_PROGRESS -> "Top Cut in progress";
+            case FINISHED -> "Finished";
+        };
     }
 }
