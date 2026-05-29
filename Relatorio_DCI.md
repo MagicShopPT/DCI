@@ -4,7 +4,7 @@
 
 **Nome do projeto:** MTG Event Manager  
 **Linguagem utilizada:** Java  
-**Interface gráfica:** Java Swing  
+**Interface gráfica:** Java Swing, com execução em navegador através de CheerpJ  
 **Paradigma principal:** Programação Orientada a Objetos  
 **Gestor de dependências:** Maven  
 **Persistência:** Ficheiros JSON com Gson  
@@ -12,7 +12,7 @@
 **Pacote base:** `pt.premodern.eventmanager`  
 **Tema:** Gestão de torneios de *Magic: The Gathering*
 
-Este relatório descreve o desenvolvimento da aplicação **MTG Event Manager**, criada no âmbito da unidade curricular de Programação Orientada a Objetos. O programa permite organizar torneios de *Magic: The Gathering*, gerir jogadores, gerar rondas suíças, inserir resultados, calcular classificações, criar Top Cut, registar penalidades, usar relógio de ronda, guardar eventos em ficheiro JSON e exportar dados para CSV.
+Este relatório descreve o desenvolvimento da aplicação **MTG Event Manager**, criada no âmbito da unidade curricular de Programação Orientada a Objetos. O programa permite organizar torneios de *Magic: The Gathering*, gerir jogadores, gerar rondas suíças, inserir resultados, calcular classificações, criar Top Cut, registar penalidades, usar relógio de ronda, guardar eventos em ficheiro JSON e exportar dados para CSV. Além da execução como aplicação Java/Swing, o projeto inclui uma página `index.html` que permite executar o ficheiro `DCI.jar` no navegador através de CheerpJ.
 
 O objetivo principal do projeto é aplicar conceitos fundamentais de Programação Orientada a Objetos num contexto prático. A aplicação tem uma interface gráfica completa, separação por pacotes, classes de domínio, serviços com regras de negócio e persistência local dos dados.
 
@@ -51,6 +51,7 @@ Os objetivos principais são:
 9. Implementar autosave para reduzir o risco de perda de dados.
 10. Exportar informação importante em CSV.
 11. Criar uma interface clara, com modo Light e Dark.
+12. Disponibilizar uma forma de execução no navegador sem alterar a lógica principal da aplicação Swing.
 
 Como objetivo secundário, o projeto procura aproximar o trabalho académico de uma aplicação real, útil para organizadores de eventos de cartas.
 
@@ -106,6 +107,7 @@ Os requisitos funcionais indicam aquilo que o sistema deve permitir fazer.
 | RF28 | Alternar entre modo Light e modo Dark. |
 | RF29 | Bloquear `Create New Event` após criação ou carregamento de um evento. |
 | RF30 | Reativar `Create New Event` apenas depois de clicar em `End Current Event`. |
+| RF31 | Executar a aplicação no navegador através de `index.html`, CheerpJ e `DCI.jar`. |
 
 ## 6. Requisitos Não Funcionais
 
@@ -123,6 +125,7 @@ Os requisitos não funcionais descrevem qualidades esperadas.
 | RNF08 | O programa deve evitar perda de dados através de autosave. |
 | RNF09 | A interface deve ser compreensível para utilizadores não técnicos. |
 | RNF10 | O código deve ser legível e adequado a um projeto académico de POO. |
+| RNF11 | O ficheiro JAR destinado ao navegador deve ser compilado para Java 17, compatível com CheerpJ. |
 
 ## 7. Atores do Sistema
 
@@ -149,6 +152,7 @@ As user stories ajudam a explicar o programa do ponto de vista do utilizador.
 9. Como organizador, quero guardar e carregar eventos para continuar o torneio mais tarde.
 10. Como organizador, quero autosave para evitar perder dados por esquecimento.
 11. Como organizador, quero alternar entre modo claro e escuro para melhorar a visualização.
+12. Como organizador, quero conseguir abrir a aplicação no navegador para a usar sem depender diretamente da janela desktop do Java.
 
 ## 9. Diagrama de Casos de Uso
 
@@ -171,6 +175,7 @@ flowchart LR
     uc13([Exportar CSV])
     uc14([Alternar Light/Dark])
     uc15([Terminar evento])
+    uc16([Executar no navegador])
 
     organizador --> uc1
     organizador --> uc2
@@ -187,11 +192,12 @@ flowchart LR
     organizador --> uc13
     organizador --> uc14
     organizador --> uc15
+    organizador --> uc16
 
     classDef actor fill:#f3f4f6,stroke:#111827,stroke-width:1px,color:#111827;
     classDef usecase fill:#eef6ff,stroke:#2563eb,stroke-width:1px,color:#111827;
     class organizador actor;
-    class uc1,uc2,uc3,uc4,uc5,uc6,uc7,uc8,uc9,uc10,uc11,uc12,uc13,uc14,uc15 usecase;
+    class uc1,uc2,uc3,uc4,uc5,uc6,uc7,uc8,uc9,uc10,uc11,uc12,uc13,uc14,uc15,uc16 usecase;
 ```
 
 ## 10. Estrutura do Projeto
@@ -209,6 +215,14 @@ O código-fonte está organizado no pacote base:
 | `ui` | Interface gráfica em Swing. |
 
 Esta separação é uma boa prática porque evita concentrar todo o código numa única classe. Cada pacote tem uma função clara.
+
+Além do código Java, o projeto inclui:
+
+| Ficheiro | Função |
+| --- | --- |
+| `pom.xml` | Configuração Maven, dependência Gson, compilação Java 17 e geração do JAR final. |
+| `DCI.jar` | JAR executável com as classes da aplicação e dependências necessárias. |
+| `index.html` | Página de arranque para executar a aplicação Swing no navegador com CheerpJ. |
 
 ## 11. Arquitetura da Aplicação
 
@@ -725,9 +739,22 @@ O som está guardado nos recursos do projeto em:
 
 `src/main/resources/audio/round_over.mp3`
 
-## 29. Aplicação dos Pilares da POO
+## 29. Execução no Navegador com CheerpJ
 
-### 29.1. Encapsulamento
+Para além da execução desktop, o projeto inclui uma página `index.html` que carrega a aplicação no navegador através de CheerpJ.
+
+O funcionamento é:
+
+1. A página carrega o loader oficial do CheerpJ 4.3.
+2. O CheerpJ é inicializado com Java 17.
+3. A página cria uma área gráfica que ocupa todo o viewport do navegador.
+4. O ficheiro `DCI.jar` é executado através de `cheerpjRunJar("/app/DCI.jar")`.
+
+O ficheiro `index.html` não mostra cabeçalhos ou textos próprios da página, para que a aplicação Swing ocupe todo o espaço disponível no navegador. O `pom.xml` foi configurado para compilar com `release 17` e gerar um JAR final chamado `DCI.jar`, porque esta versão de bytecode é compatível com o runtime Java 17 suportado pelo CheerpJ.
+
+## 30. Aplicação dos Pilares da POO
+
+### 30.1. Encapsulamento
 
 O encapsulamento aparece quando os atributos das classes são privados e o acesso é feito por métodos.
 
@@ -739,7 +766,7 @@ Exemplos:
 
 Isto evita que o resto do programa dependa diretamente da estrutura interna dos objetos.
 
-### 29.2. Abstração
+### 30.2. Abstração
 
 A abstração aparece quando uma classe representa uma ideia do mundo real.
 
@@ -753,7 +780,7 @@ Exemplos:
 
 O programador não trabalha apenas com variáveis soltas; trabalha com objetos que têm significado.
 
-### 29.3. Herança
+### 30.3. Herança
 
 O projeto usa herança principalmente de forma indireta através de Java Swing. Por exemplo:
 
@@ -763,7 +790,7 @@ O projeto usa herança principalmente de forma indireta através de Java Swing. 
 
 Isto permite criar componentes gráficos personalizados usando classes já existentes da biblioteca Java.
 
-### 29.4. Polimorfismo
+### 30.4. Polimorfismo
 
 O polimorfismo aparece no uso de componentes Swing e interfaces da própria linguagem.
 
@@ -776,9 +803,9 @@ Exemplos:
 
 Este conceito permite escrever código mais flexível.
 
-## 30. Outros Conceitos de Programação Usados
+## 31. Outros Conceitos de Programação Usados
 
-### 30.1. Coleções
+### 31.1. Coleções
 
 O projeto usa várias coleções Java:
 
@@ -788,11 +815,11 @@ O projeto usa várias coleções Java:
 
 Coleções são essenciais para gerir vários objetos.
 
-### 30.2. UUID
+### 31.2. UUID
 
 O projeto usa `UUID` para identificar jogadores, partidas e eventos. Isto reduz o risco de IDs repetidos.
 
-### 30.3. Streams
+### 31.3. Streams
 
 O projeto usa streams em várias situações, por exemplo:
 
@@ -803,7 +830,7 @@ O projeto usa streams em várias situações, por exemplo:
 
 Streams tornam algumas operações sobre listas mais compactas.
 
-### 30.4. Exceções
+### 31.4. Exceções
 
 O programa usa exceções para sinalizar erros, como:
 
@@ -814,7 +841,7 @@ O programa usa exceções para sinalizar erros, como:
 
 A interface apanha estas exceções e mostra uma mensagem ao utilizador.
 
-## 31. Boas Práticas Utilizadas
+## 32. Boas Práticas Utilizadas
 
 Foram aplicadas várias boas práticas:
 
@@ -830,7 +857,7 @@ Foram aplicadas várias boas práticas:
 - uso de JSON para persistência legível;
 - uso de métodos pequenos sempre que possível.
 
-## 32. Limitações Atuais
+## 33. Limitações Atuais
 
 Apesar de funcional, o projeto ainda tem limitações:
 
@@ -839,13 +866,14 @@ Apesar de funcional, o projeto ainda tem limitações:
 - não existe autenticação de organizadores;
 - não existem testes automatizados no projeto;
 - o algoritmo suíço é uma aproximação e não substitui software oficial;
-- a interface é desktop, não web;
+- a interface continua a ser uma aplicação Swing, mesmo quando executada no navegador;
+- a execução no navegador depende do CheerpJ e de um browser moderno;
 - algumas regras oficiais de torneios podem não estar totalmente implementadas;
 - o autosave depende de ficheiros locais.
 
 Estas limitações são aceitáveis num projeto académico inicial, mas mostram caminhos de evolução.
 
-## 33. Possíveis Melhorias Futuras
+## 34. Possíveis Melhorias Futuras
 
 Algumas melhorias possíveis:
 
@@ -862,11 +890,11 @@ Algumas melhorias possíveis:
 11. Criar instalador da aplicação.
 12. Guardar preferências do utilizador, como o modo Light/Dark.
 
-## 34. Como Compilar e Executar
+## 35. Como Compilar e Executar
 
-O projeto usa Maven.
+O projeto usa Maven e está configurado para compilar com Java 17.
 
-Para executar:
+Para executar a aplicação desktop:
 
 ```powershell
 mvn clean compile exec:java
@@ -878,9 +906,23 @@ Para gerar o ficheiro JAR:
 mvn clean package
 ```
 
-Também é possível compilar diretamente com `javac`, desde que a dependência Gson esteja no classpath.
+Este comando gera o ficheiro `DCI.jar` na raiz do projeto, com a dependência Gson incluída através do `maven-shade-plugin`.
 
-## 35. Dependências
+Para executar no navegador, é necessário servir a pasta do projeto através de um servidor HTTP local e abrir a página `index.html`. Por exemplo:
+
+```powershell
+python -m http.server 8080
+```
+
+Depois, a aplicação pode ser aberta em:
+
+```text
+http://localhost:8080/
+```
+
+Também é possível compilar diretamente com `javac`, desde que a dependência Gson esteja no classpath, mas o Maven é a opção principal porque gera automaticamente o JAR final usado pela versão web.
+
+## 36. Dependências
 
 O projeto usa a biblioteca:
 
@@ -891,10 +933,13 @@ O projeto usa a biblioteca:
 O Maven também configura:
 
 - `maven-compiler-plugin`;
+- `maven-shade-plugin`;
 - `maven-surefire-plugin`;
 - `exec-maven-plugin`.
 
-## 36. Conclusão
+A execução no navegador usa ainda o CheerpJ 4.3, carregado a partir do `index.html`, para disponibilizar um runtime Java no browser.
+
+## 37. Conclusão
 
 O projeto **MTG Event Manager** demonstra a aplicação prática de Programação Orientada a Objetos numa aplicação Java com interface gráfica. O programa tem um domínio claro, com classes como `Event`, `Player`, `Round`, `Match` e `PenaltyEntry`, e separa regras de negócio em serviços próprios.
 
@@ -902,13 +947,14 @@ Uma parte importante do projeto é a separação entre a interface Swing e a ló
 
 O projeto também mostra conceitos úteis para um aluno de primeiro ano, como encapsulamento, classes, objetos, enums, listas, ficheiros, exceções, eventos de botões e organização por pacotes.
 
-Na minha opinião, o ponto mais forte da aplicação é juntar vários conceitos num programa funcional: criação de eventos, gestão de jogadores, rondas suíças, resultados, penalidades, Top Cut, persistência, autosave e interface gráfica. Ainda há melhorias possíveis, especialmente testes e base de dados, mas a estrutura atual já permite evoluir o programa de forma organizada.
+Na minha opinião, o ponto mais forte da aplicação é juntar vários conceitos num programa funcional: criação de eventos, gestão de jogadores, rondas suíças, resultados, penalidades, Top Cut, persistência, autosave, interface gráfica e execução no navegador através de CheerpJ. Ainda há melhorias possíveis, especialmente testes e base de dados, mas a estrutura atual já permite evoluir o programa de forma organizada.
 
-## 37. Bibliografia e Referências
+## 38. Bibliografia e Referências
 
 - Documentação oficial do Java: https://docs.oracle.com/en/java/
 - Documentação Java Swing: https://docs.oracle.com/javase/tutorial/uiswing/
 - Documentação Maven: https://maven.apache.org/
 - Documentação Gson: https://github.com/google/gson
+- Documentação CheerpJ: https://cheerpj.com/docs/
 - Documentação Mermaid: https://mermaid.js.org/
 - Código-fonte do projeto MTG Event Manager.
