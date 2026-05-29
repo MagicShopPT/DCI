@@ -4,7 +4,7 @@ Java + Swing desktop application for managing Magic: The Gathering tournaments w
 
 ## Requirements
 
-- JDK 25 or higher
+- JDK 17 or higher
 - Maven 3.9 or higher
 
 ## Run

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Manager - Java Swing App</title>
+    <link rel="icon" href="data:,">
+    <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #app-container {
+            width: 100vw;
+            height: 100svh;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container"></div>
+    <script type="module">
+        const container = document.getElementById("app-container");
+
+        try {
+            console.log("Starting CheerpJ initialization...");
+            await cheerpjInit({ version: 17 });
+
+            cheerpjCreateDisplay(-1, -1, container);
+            await cheerpjRunJar("/app/DCI.jar");
+        } catch (error) {
+            console.error("CheerpJ startup error:", error);
+            container.textContent = "Error loading Event Manager: " + error;
+        }
+    </script>
+</body>
+</html>
