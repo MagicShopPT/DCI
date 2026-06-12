@@ -453,6 +453,7 @@ public class MainFrame extends JFrame {
         eventMenu.add(item("Generate Round", this::generateSwissRound));
         eventMenu.add(item("Enter Results", () -> showPanel(resultsPanel)));
         eventMenu.add(item("View Standings", () -> showPanel(standingsPanel)));
+        eventMenu.add(item("Print Standings", standingsPanel::printStandings));
         eventMenu.add(item("Create Top Cut", this::createTopCut));
         eventMenu.add(item("Clock", () -> showPanel(clockPanel)));
         return eventMenu;
