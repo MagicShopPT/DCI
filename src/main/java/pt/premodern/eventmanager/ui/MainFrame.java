@@ -545,6 +545,10 @@ public class MainFrame extends JFrame {
     }
 
     private void saveEvent() throws IOException {
+        if (isBrowserRuntime()) {
+            saveEventForBrowserDownload();
+            return;
+        }
         if (currentFile == null) {
             saveEventAs();
             return;
@@ -561,6 +565,31 @@ public class MainFrame extends JFrame {
             storageService.saveEvent(event, currentFile);
             showInfo("Event saved.");
         }
+    }
+
+    private void saveEventForBrowserDownload() throws IOException {
+        String fileName = safeFileName(event.getName()) + ".json";
+        File file = new File("/files/" + fileName);
+        File parent = file.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+        storageService.saveEvent(event, file);
+        requestBrowserDownload(file.getPath().replace('\\', '/'), fileName);
+        showInfo("Download started.");
+    }
+
+    private void requestBrowserDownload(String path, String fileName) throws IOException {
+        try {
+            Runtime.getRuntime().exec(new String[] { "eventmanager-download", path, fileName });
+        } catch (IOException exception) {
+            throw new IOException("Event saved in the browser virtual filesystem at " + path
+                    + ", but the browser download could not be started.", exception);
+        }
+    }
+
+    private boolean isBrowserRuntime() {
+        return Boolean.getBoolean("eventmanager.browser");
     }
 
     private void exportCsv(String defaultName, CsvAction action) {

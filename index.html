@@ -26,9 +26,30 @@
     <script type="module">
         const container = document.getElementById("app-container");
 
+        async function downloadCheerpJFile(path, fileName) {
+            const blob = await cjFileBlob(path);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName || "event.json";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
         try {
             console.log("Starting CheerpJ initialization...");
-            await cheerpjInit({ version: 17 });
+            await cheerpjInit({
+                version: 17,
+                javaProperties: ["eventmanager.browser=true"],
+                execCallback(cmdPath, argsArray) {
+                    if (cmdPath === "eventmanager-download" || cmdPath.endsWith("/eventmanager-download")) {
+                        downloadCheerpJFile(argsArray[0], argsArray[1])
+                            .catch(error => console.error("Download error:", error));
+                    }
+                }
+            });
 
             cheerpjCreateDisplay(-1, -1, container);
             await cheerpjRunJar("/app/DCI.jar");
