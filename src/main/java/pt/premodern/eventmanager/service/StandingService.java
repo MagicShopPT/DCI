@@ -18,17 +18,25 @@ public class StandingService {
     private static final double OPPONENT_MINIMUM = 0.33;
 
     public List<Standing> calculateStandings(Event event) {
+        return calculateStandingsAfterRound(event, latestSwissRoundNumber(event));
+    }
+
+    public List<Standing> calculateStandingsAfterRound(Event event, int roundNumber) {
         Map<UUID, Player> playersById = event.getPlayers().stream()
                 .collect(Collectors.toMap(Player::getId, Function.identity()));
+        Map<UUID, PlayerStats> stats = calculateStats(event, Math.max(0, roundNumber));
 
         List<Standing> standings = event.getPlayers().stream()
-                .map(player -> new Standing(
-                        player,
-                        0,
-                        player.getMatchPoints(),
-                        calculateOpponentsMatchWinPercentage(event, player, playersById),
-                        calculateGameWinPercentage(player),
-                        calculateOpponentsGameWinPercentage(player, playersById)))
+                .map(player -> {
+                    PlayerStats playerStats = statsFor(stats, player);
+                    return new Standing(
+                            player,
+                            0,
+                            playerStats.matchPoints,
+                            calculateOpponentsMatchWinPercentage(playerStats, stats, playersById),
+                            calculateGameWinPercentage(playerStats),
+                            calculateOpponentsGameWinPercentage(playerStats, stats, playersById));
+                })
                 .sorted(Comparator.comparingInt(Standing::getMatchPoints).reversed()
                         .thenComparing(Standing::getOmwPercentage, Comparator.reverseOrder())
                         .thenComparing(Standing::getGwPercentage, Comparator.reverseOrder())
@@ -43,7 +51,11 @@ public class StandingService {
     }
 
     public List<TeamStanding> calculateTeamStandings(Event event) {
-        Map<Player, Standing> individualStandings = calculateStandings(event).stream()
+        return calculateTeamStandingsAfterRound(event, latestSwissRoundNumber(event));
+    }
+
+    public List<TeamStanding> calculateTeamStandingsAfterRound(Event event, int roundNumber) {
+        Map<Player, Standing> individualStandings = calculateStandingsAfterRound(event, roundNumber).stream()
                 .collect(Collectors.toMap(Standing::getPlayer, Function.identity()));
         List<TeamStanding> standings = event.getPlayers().stream()
                 .filter(Player::hasTeam)
@@ -65,38 +77,39 @@ public class StandingService {
     }
 
     public double calculateMatchWinPercentage(Event event, Player player) {
-        int matchesPlayed = countMatchesPlayed(event, player);
-        if (matchesPlayed == 0) {
-            return 0.0;
-        }
-        return clamp(player.getMatchPoints() / (matchesPlayed * 3.0));
+        Map<UUID, PlayerStats> stats = calculateStats(event, latestSwissRoundNumber(event));
+        return calculateMatchWinPercentage(statsFor(stats, player));
     }
 
-    private double calculateGameWinPercentage(Player player) {
-        int totalGames = player.getGamesWon() + player.getGamesLost() + player.getGamesDrawn();
+    private double calculateGameWinPercentage(PlayerStats stats) {
+        int totalGames = stats.gamesWon + stats.gamesLost + stats.gamesDrawn;
         if (totalGames == 0) {
             return 0.0;
         }
-        return clamp(player.getGamesWon() / (double) totalGames);
+        return clamp(stats.gamesWon / (double) totalGames);
     }
 
-    private double calculateOpponentsMatchWinPercentage(Event event, Player player, Map<UUID, Player> playersById) {
-        List<Player> opponents = player.getOpponentsIds().stream()
-                .map(playersById::get)
+    private double calculateOpponentsMatchWinPercentage(PlayerStats playerStats, Map<UUID, PlayerStats> statsById,
+            Map<UUID, Player> playersById) {
+        List<PlayerStats> opponents = playerStats.opponentsIds.stream()
+                .filter(playersById::containsKey)
+                .map(statsById::get)
                 .filter(Objects::nonNull)
                 .toList();
         if (opponents.isEmpty()) {
             return 0.0;
         }
         return opponents.stream()
-                .mapToDouble(opponent -> Math.max(OPPONENT_MINIMUM, calculateMatchWinPercentage(event, opponent)))
+                .mapToDouble(opponent -> Math.max(OPPONENT_MINIMUM, calculateMatchWinPercentage(opponent)))
                 .average()
                 .orElse(0.0);
     }
 
-    private double calculateOpponentsGameWinPercentage(Player player, Map<UUID, Player> playersById) {
-        List<Player> opponents = player.getOpponentsIds().stream()
-                .map(playersById::get)
+    private double calculateOpponentsGameWinPercentage(PlayerStats playerStats, Map<UUID, PlayerStats> statsById,
+            Map<UUID, Player> playersById) {
+        List<PlayerStats> opponents = playerStats.opponentsIds.stream()
+                .filter(playersById::containsKey)
+                .map(statsById::get)
                 .filter(Objects::nonNull)
                 .toList();
         if (opponents.isEmpty()) {
@@ -108,29 +121,16 @@ public class StandingService {
                 .orElse(0.0);
     }
 
-    private int countMatchesPlayed(Event event, Player player) {
-        int count = 0;
-        for (Round round : event.getRounds()) {
-            if (round.isPlayoffRound()) {
-                continue;
-            }
-            for (Match match : round.getMatches()) {
-                if (match.isCompleted()
-                        && ((match.getPlayer1() != null && Objects.equals(match.getPlayer1().getId(), player.getId()))
-                        || (match.getPlayer2() != null && Objects.equals(match.getPlayer2().getId(), player.getId())))) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
     private double clamp(double value) {
         return Math.max(0.0, Math.min(1.0, value));
     }
 
     private TeamStanding teamStanding(String team, List<Player> players, Map<Player, Standing> individualStandings) {
-        int points = players.stream().mapToInt(Player::getMatchPoints).sum();
+        int points = players.stream()
+                .map(individualStandings::get)
+                .filter(Objects::nonNull)
+                .mapToInt(Standing::getMatchPoints)
+                .sum();
         double omw = average(players, individualStandings, TieBreaker.OMW);
         double gw = average(players, individualStandings, TieBreaker.GW);
         double ogw = average(players, individualStandings, TieBreaker.OGW);
@@ -151,10 +151,93 @@ public class StandingService {
                 .orElse(0.0);
     }
 
+    private int latestSwissRoundNumber(Event event) {
+        return event.getRounds().stream()
+                .filter(round -> !round.isPlayoffRound())
+                .mapToInt(Round::getNumber)
+                .max()
+                .orElse(0);
+    }
+
+    private Map<UUID, PlayerStats> calculateStats(Event event, int roundNumber) {
+        Map<UUID, PlayerStats> stats = event.getPlayers().stream()
+                .collect(Collectors.toMap(Player::getId, player -> new PlayerStats()));
+
+        for (Round round : event.getRounds()) {
+            if (round.isPlayoffRound() || round.getNumber() > roundNumber) {
+                continue;
+            }
+            for (Match match : round.getMatches()) {
+                if (!match.isCompleted()) {
+                    continue;
+                }
+                if (match.isBye()) {
+                    PlayerStats playerStats = statsFor(stats, match.getPlayer1());
+                    playerStats.matchPoints += 3;
+                    playerStats.matchesPlayed++;
+                    continue;
+                }
+                applyMatchStats(match, stats);
+            }
+        }
+        return stats;
+    }
+
+    private void applyMatchStats(Match match, Map<UUID, PlayerStats> stats) {
+        Player p1 = match.getPlayer1();
+        Player p2 = match.getPlayer2();
+        if (p1 == null || p2 == null) {
+            return;
+        }
+
+        PlayerStats p1Stats = statsFor(stats, p1);
+        PlayerStats p2Stats = statsFor(stats, p2);
+        p1Stats.matchesPlayed++;
+        p2Stats.matchesPlayed++;
+
+        p1Stats.gamesWon += match.getPlayer1GamesWon();
+        p1Stats.gamesLost += match.getPlayer2GamesWon();
+        p1Stats.gamesDrawn += match.getDrawGames();
+        p2Stats.gamesWon += match.getPlayer2GamesWon();
+        p2Stats.gamesLost += match.getPlayer1GamesWon();
+        p2Stats.gamesDrawn += match.getDrawGames();
+
+        if (match.getPlayer1GamesWon() > match.getPlayer2GamesWon()) {
+            p1Stats.matchPoints += 3;
+        } else if (match.getPlayer2GamesWon() > match.getPlayer1GamesWon()) {
+            p2Stats.matchPoints += 3;
+        } else {
+            p1Stats.matchPoints++;
+            p2Stats.matchPoints++;
+        }
+        p1Stats.opponentsIds.add(p2.getId());
+        p2Stats.opponentsIds.add(p1.getId());
+    }
+
+    private PlayerStats statsFor(Map<UUID, PlayerStats> stats, Player player) {
+        return stats.computeIfAbsent(player.getId(), id -> new PlayerStats());
+    }
+
+    private double calculateMatchWinPercentage(PlayerStats stats) {
+        if (stats.matchesPlayed == 0) {
+            return 0.0;
+        }
+        return clamp(stats.matchPoints / (stats.matchesPlayed * 3.0));
+    }
+
     private enum TieBreaker {
         OMW,
         GW,
         OGW
+    }
+
+    private static class PlayerStats {
+        private int matchPoints;
+        private int gamesWon;
+        private int gamesLost;
+        private int gamesDrawn;
+        private int matchesPlayed;
+        private final List<UUID> opponentsIds = new java.util.ArrayList<>();
     }
 
     public static class TeamStanding {

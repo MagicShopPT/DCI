@@ -424,6 +424,7 @@ public class MainFrame extends JFrame {
         JMenuItem open = item("Open Event", this::openEvent);
         JMenuItem save = item("Save Event", this::saveEvent);
         JMenuItem importPlayers = item("Import Players CSV", this::importPlayersFromCsv);
+        JMenuItem printStandings = item("Print Standings", standingsPanel::printStandings);
         JMenu export = new JMenu("Export CSV");
         export.add(item("Player List", () -> exportCsv("players", selected -> eventService.exportPlayers(event, selected))));
         export.add(item("Current Round Pairings", () -> exportCsv("pairings", selected -> eventService.exportCurrentPairings(event, selected))));
@@ -434,6 +435,7 @@ public class MainFrame extends JFrame {
         file.add(open);
         file.add(save);
         file.add(importPlayers);
+        file.add(printStandings);
         file.add(export);
         file.addSeparator();
         file.add(exit);
@@ -502,7 +504,7 @@ public class MainFrame extends JFrame {
                 Players: add, edit, remove, import, drop players, and open Penalty Entry for the selected player.
                 Pairings: generate the next Swiss round, inspect each round's pairings, and search the pairing table.
                 Results: choose a round, enter match scores, mark player drops for that round, generate match result slips, and click table headers to sort results ascending or descending.
-                Standings: refresh player standings, and switch to team standings when the event is a team event.
+                Standings: choose the round to view or print standings, refresh player standings, and switch to team standings when the event is a team event.
                 Top Cut: create the playoff bracket after Swiss rounds, generate following playoff rounds, and enter playoff results from the Results tab.
                 Clock: set the round duration, start, pause, reset, and hear the round-over alert.
                 File: open and save events, import players from CSV, export players, pairings, standings, and results to CSV.
